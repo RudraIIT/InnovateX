@@ -33,24 +33,24 @@ const BottomProps: React.FC<BottomProps> = ({}) => {
         </p>
 
         <div className="mt-6 flex gap-4 relative z-10">
-          <button className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white">
+          <button className="px-5 py-2 rounded-3xl bg-indigo-600 hover:bg-indigo-700 text-white">
             Get access
           </button>
-          <button className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white">
+          <button className="px-5 py-2 rounded-3xl bg-gray-700 hover:bg-gray-600 text-white">
             Book a demo
           </button>
         </div>
       </div>
 
       <footer className="mt-auto py-10 px-8 bg-[#0D0D1A] text-gray-400">
-        <div className="flex flex-col md:flex-row justify-between items-center md:items-start">
+        <div className="flex flex-col md:flex-row justify-evenly items-center md:items-start mb-10">
           <div className="flex flex-col items-center md:items-start space-y-4">
             <div className="w-8 h-8  rounded-md flex items-center justify-center">
               <div className="grid grid-cols-2 gap-0.5">
-                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                <div className="w-1.5 h-1.5 bg-transparent"></div>
+                <div className="w-3 h-3 bg-white rounded-full"></div>
+                <div className="w-3 h-3 bg-white rounded-full"></div>
+                <div className="w-3 h-3 bg-white rounded-full"></div>
+                <div className="w-3 h-3 bg-transparent"></div>
               </div>
             </div>
 
