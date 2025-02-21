@@ -2,13 +2,12 @@
 import  Link  from 'next/link';
 import React from 'react';
 import { Facebook, Youtube, Twitter } from 'lucide-react';
-import next from 'next';
 
 interface BottomProps {}
 
 const BottomProps: React.FC<BottomProps> = ({}) => {
     return(
-        <div className="bg-[#0D0D1A] text-white flex flex-col min-h-screen overflow-hidden">
+        <div className="text-white flex flex-col min-h-screen overflow-hidden">
       <div className="flex flex-col items-center justify-center text-center pt-20 pb-32 relative">
         <div className="absolute top-0 w-1/3 h-80  bg-gradient-to-r from-[#b446d3] to-[#1a83c9] rounded-b-full blur-2xl opacity-30"></div>
         <div data-rf="frame.layer" className="absolute flex flex-row aspect-[10/4] -left-1/2 -right-1/2 translate-x-1/2 w-screen bottom-[70%] bg-landing-950 rounded-[50%] border-b border-b-landing-50/30 bg-[#0D0D1A] border-slate-600"></div>
