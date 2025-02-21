@@ -14,7 +14,7 @@
   dependencies:
     regenerator-runtime "^0.14.0"
 
-"@clerk/backend@^1.24.2":
+"@clerk/backend@^1.21.6", "@clerk/backend@^1.24.2":
   version "1.24.2"
   resolved "https://registry.yarnpkg.com/@clerk/backend/-/backend-1.24.2.tgz#43ae986b32883b1668f79cffe88c90de8be6d4bd"
   integrity sha512-O5W3AlZ/g5dcdadXbBJfq+JqXoTimR2vm8bMTEJ2MEaCDXOyFoGvlv+93XxS3TgcuWFrVPgzdBPfaE/95G5Xxw==
@@ -34,6 +34,16 @@
     "@clerk/types" "^4.46.1"
     tslib "2.4.1"
 
+"@clerk/clerk-sdk-node@^5.1.6":
+  version "5.1.6"
+  resolved "https://registry.yarnpkg.com/@clerk/clerk-sdk-node/-/clerk-sdk-node-5.1.6.tgz#fc3d8cf6ed63d9c0956dc643557bb75ec91f9fa7"
+  integrity sha512-KeF5p0XP0gNoCx+YIHrfrkNNADBz8ZabwPAhOiJZ9Wo14r93WlzRA51IE0Qgteej8IpWwnvKu4/MpiV7FFoLqA==
+  dependencies:
+    "@clerk/backend" "^1.21.6"
+    "@clerk/shared" "^2.20.6"
+    "@clerk/types" "^4.40.2"
+    tslib "2.4.1"
+
 "@clerk/nextjs@^6.12.0":
   version "6.12.0"
   resolved "https://registry.yarnpkg.com/@clerk/nextjs/-/nextjs-6.12.0.tgz#f748ddca96414baa091c3713c40497b53a133740"
@@ -47,7 +57,7 @@
     server-only "0.0.1"
     tslib "2.4.1"
 
-"@clerk/shared@^2.22.0":
+"@clerk/shared@^2.20.6", "@clerk/shared@^2.22.0":
   version "2.22.0"
   resolved "https://registry.yarnpkg.com/@clerk/shared/-/shared-2.22.0.tgz#c5c5b6f24241370a0ebb0e0109e8812219f55f9a"
   integrity sha512-VWBeddOJVa3sqUPdvquaaQYw4h5hACSG3EUDOW7eSu2F6W3BXUozyLJQPBJ9C0MuoeHhOe/DeV8x2KqOgxVZaQ==
@@ -59,7 +69,7 @@
     std-env "^3.7.0"
     swr "^2.2.0"
 
-"@clerk/types@^4.46.1":
+"@clerk/types@^4.40.2", "@clerk/types@^4.46.1":
   version "4.46.1"
   resolved "https://registry.yarnpkg.com/@clerk/types/-/types-4.46.1.tgz#184cb04b5ede35920c7b2efa2d4aae670a5c2bcd"
   integrity sha512-QwomMjG1v2GqOITU2/rQUC11LFFsqNFUA92VKDo8dS1nN9iQadT6cNk7MZWqEYTxAfAM/IgX/gB00aGsLKaV8g==

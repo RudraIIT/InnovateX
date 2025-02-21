@@ -5,11 +5,8 @@ import { IconBrandFacebook, IconBrandTwitter, IconBrandYoutube } from "@tabler/i
 const BottomProps: React.FC = () => {
   return (
     <div className="text-white flex flex-col min-h-screen overflow-hidden bg-[#090b0c]">
-      {/* Hero Section */}
       <div className="flex flex-col items-center justify-center text-center pt-20 pb-32 relative px-4">
-        {/* Gradient Background */}
         <div className="absolute top-0 w-1/2 md:w-1/3 h-80 bg-gradient-to-r from-[#b446d3] to-[#1a83c9] rounded-b-full blur-2xl opacity-30"></div>
-
         {/* Semi-circle Shape */}
         <div
           data-rf="frame.layer"
@@ -18,20 +15,36 @@ const BottomProps: React.FC = () => {
 
         {/* Logo */}
         <div className="relative z-10 mb-6">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-black rounded-[2rem] flex items-center justify-center border-2 border-white border-opacity-20">
-            <img src="/logo.png" alt="Logo" className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16" />
+          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-[rgb(25,27,31)] bg-gradient-to-t from-[rgb(18,19,21)] to-[rgb(62,64,69)] rounded-[2rem] flex items-center justify-center border-2 border-white border-opacity-20">
+            <div className="grid grid-cols-4 grid-rows-4 gap-0.5">
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+                <div className="h-4 w-4 rounded-full "></div>
+                <div className="h-4 w-4 rounded-full "></div>
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+                <div className="h-4 w-4 rounded-full "></div>
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+                <div className="h-4 w-4 rounded-full "></div>
+                <div className="h-4 w-4 rounded-full "></div>
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+                <div className="h-4 w-4 rounded-full "></div>
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+                <div className="h-4 w-4 rounded-full "></div>
+                <div className="h-4 w-4 rounded-full "></div>
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+            </div>            
           </div>
         </div>
 
 
         {/* Heading & Subtext */}
         <h1 className="text-3xl md:text-5xl font-semibold relative z-10 leading-tight">
-          The missing platform to build your AI apps
-        </h1>
+          From prompt to product—build websites </h1>
+          <h1 className="text-3xl md:text-5xl font-semibold relative z-10 leading-tight">& apps in seconds.</h1>
 
         <p className="mt-4 text-gray-400 relative z-10 max-w-xl text-sm md:text-lg">
-          Use it to build your own AI powered apps. No coding required.
-        </p>
+        Build websites & apps effortlessly—just with a prompt.        </p>
 
         {/* Buttons */}
         <div className="mt-6 flex flex-col sm:flex-row gap-4 relative z-10">
@@ -50,12 +63,17 @@ const BottomProps: React.FC = () => {
           {/* Logo & Socials */}
           <div className="flex flex-col items-center md:items-start space-y-4">
             <div className="w-8 h-8 rounded-md flex items-center justify-center">
-              <div className="grid grid-cols-2 gap-0.5">
-                <div className="w-3 h-3 bg-white rounded-full"></div>
-                <div className="w-3 h-3 bg-white rounded-full"></div>
-                <div className="w-3 h-3 bg-white rounded-full"></div>
-                <div className="w-3 h-3 bg-transparent"></div>
-              </div>
+              {/* <div className="grid grid-cols-3 grid-rows-3 gap-1">
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+                <div className="h-4 w-4 rounded-full "></div>
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+                <div className="h-4 w-4 rounded-full "></div>
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+                <div className="h-4 w-4 rounded-full "></div>
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+                <div className="h-4 w-4 rounded-full "></div>
+                <div className="h-4 w-4 rounded-full bg-white"></div>
+            </div> */}
             </div>
 
             {/* Social Media Icons */}
@@ -78,17 +96,17 @@ const BottomProps: React.FC = () => {
             <ul className="space-y-2">
               <li>
                 <Link href="#" className="hover:text-indigo-400">
-                  Recipes
+                  Features
                 </Link>
               </li>
               <li>
                 <Link href="#" className="hover:text-indigo-400">
-                  Book a demo
+                Community
                 </Link>
               </li>
               <li>
                 <Link href="#" className="hover:text-indigo-400">
-                  Pricing
+                  Help Center
                 </Link>
               </li>
             </ul>
