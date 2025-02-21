@@ -28,7 +28,7 @@ ${prompt}
 `;
 }
 
-export const GENERAL_PROMPT = `
+const GENERAL_PROMPT = `
 Build a **full-stack Next.js 15.1.6 app** with the App Router.
 - **Tailwind CSS** for styling.
 - **Dark Mode support**.
