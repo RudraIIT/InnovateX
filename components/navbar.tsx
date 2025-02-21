@@ -1,3 +1,4 @@
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs"
 import Link from "next/link"
 
 export const Navbar = () => {
@@ -6,11 +7,19 @@ export const Navbar = () => {
       <Link href="/">
         <h1 className="text-3xl font-bold">InnovateX</h1>
       </Link>
-      <button className="px-4 py-2 rounded-full font-semibold bg-[#635dff]">
-        <Link href="/signup">
+      {/* <button className="px-4 py-2 rounded-full font-semibold bg-[#635dff]"> */}
+        {/* <Link href="/signup">
           Signup
-        </Link>
-      </button>
+        </Link> */}
+          <SignedOut>
+            <div className="px-4 py-2 rounded-full font-semibold bg-[#635dff]">
+              <SignInButton />
+            </div>
+          </SignedOut>
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
+      {/* </button> */}
     </nav>
   )
 }
