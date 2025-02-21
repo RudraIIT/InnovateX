@@ -5,8 +5,10 @@ import { IconBrandFacebook, IconBrandTwitter, IconBrandYoutube } from "@tabler/i
 const BottomProps: React.FC = () => {
   return (
     <div className="text-white flex flex-col min-h-screen overflow-hidden bg-[#090b0c]">
+      {/* Hero Section */}
       <div className="flex flex-col items-center justify-center text-center pt-20 pb-32 relative px-4">
         <div className="absolute top-0 w-1/2 md:w-1/3 h-80 bg-gradient-to-r from-[#b446d3] to-[#1a83c9] rounded-b-full blur-2xl opacity-30"></div>
+
         {/* Semi-circle Shape */}
         <div
           data-rf="frame.layer"
@@ -40,19 +42,20 @@ const BottomProps: React.FC = () => {
 
         {/* Heading & Subtext */}
         <h1 className="text-3xl md:text-5xl font-semibold relative z-10 leading-tight">
-          From prompt to product—build websites </h1>
-          <h1 className="text-3xl md:text-5xl font-semibold relative z-10 leading-tight">& apps in seconds.</h1>
+          The missing platform to build your AI apps
+        </h1>
 
         <p className="mt-4 text-gray-400 relative z-10 max-w-xl text-sm md:text-lg">
-        Build websites & apps effortlessly—just with a prompt.        </p>
+          Use it to build your own AI powered apps. No coding required.
+        </p>
 
         {/* Buttons */}
         <div className="mt-6 flex flex-col sm:flex-row gap-4 relative z-10">
           <button className="px-6 py-3 rounded-3xl bg-indigo-600 hover:bg-indigo-700 text-white">
-            Get access
+          Get Started
           </button>
           <button className="px-6 py-3 rounded-3xl bg-gray-700 hover:bg-gray-600 text-white">
-            Book a demo
+            Build Now
           </button>
         </div>
       </div>
@@ -92,21 +95,21 @@ const BottomProps: React.FC = () => {
 
           {/* Product Links */}
           <div className="text-center md:text-left">
-            <h3 className="text-white font-semibold">Product</h3>
+            <h3 className="text-white font-semibold">Quick Links</h3>
             <ul className="space-y-2">
               <li>
                 <Link href="#" className="hover:text-indigo-400">
-                  Features
+                  Recipes
                 </Link>
               </li>
               <li>
                 <Link href="#" className="hover:text-indigo-400">
-                Community
+                  Book a demo
                 </Link>
               </li>
               <li>
                 <Link href="#" className="hover:text-indigo-400">
-                  Help Center
+                  Pricing
                 </Link>
               </li>
             </ul>
@@ -114,20 +117,26 @@ const BottomProps: React.FC = () => {
 
           {/* Company Links */}
           <div className="text-center md:text-left">
-            <h3 className="text-white font-semibold">Company</h3>
+            <h3 className="text-white font-semibold">Legal</h3>
             <ul className="space-y-2">
               <li>
                 <Link href="#" className="hover:text-indigo-400">
-                  Terms of Service
+                Privacy Policy
                 </Link>
               </li>
               <li>
                 <Link href="#" className="hover:text-indigo-400">
-                  Privacy
+                Terms of Service
                 </Link>
               </li>
             </ul>
           </div>
+        </div>
+        <div className="text-center mt-10">
+        {`"Empowering innovation, Website in a click."`}
+        <div>
+        © 2025 InnovateX. All rights reserved.
+        </div>
         </div>
       </footer>
     </div>

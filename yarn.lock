@@ -336,6 +336,20 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
+"@monaco-editor/loader@^1.5.0":
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/@monaco-editor/loader/-/loader-1.5.0.tgz#dcdbc7fe7e905690fb449bed1c251769f325c55d"
+  integrity sha512-hKoGSM+7aAc7eRTRjpqAZucPmoNOC4UUbknb/VNoTkEIkCPhqV8LfbsgM1webRM7S/z21eHEx9Fkwx8Z/C/+Xw==
+  dependencies:
+    state-local "^1.0.6"
+
+"@monaco-editor/react@^4.7.0":
+  version "4.7.0"
+  resolved "https://registry.yarnpkg.com/@monaco-editor/react/-/react-4.7.0.tgz#35a1ec01bfe729f38bfc025df7b7bac145602a60"
+  integrity sha512-cyzXQCtO47ydzxpQtCGSQGOC8Gk3ZUeBXFAxD+CWXYFo5OqZyZUonFl0DwUlTyAfRHntBfw2p3w4s9R6oe1eCA==
+  dependencies:
+    "@monaco-editor/loader" "^1.5.0"
+
 "@next/env@15.1.7":
   version "15.1.7"
   resolved "https://registry.yarnpkg.com/@next/env/-/env-15.1.7.tgz#14e2678f893aec50ff2dcb7a6665092fb9e1263d"
@@ -419,17 +433,77 @@
   resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"
   integrity sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==
 
+"@radix-ui/number@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@radix-ui/number/-/number-1.1.0.tgz#1e95610461a09cdf8bb05c152e76ca1278d5da46"
+  integrity sha512-V3gRzhVNU1ldS5XhAPTom1fOIo4ccrjjJgmE+LI2h/WaFpHmx0MQApT+KZHnx8abG6Avtfcz4WoEciMnpFT3HQ==
+
+"@radix-ui/primitive@1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@radix-ui/primitive/-/primitive-1.1.1.tgz#fc169732d755c7fbad33ba8d0cd7fd10c90dc8e3"
+  integrity sha512-SJ31y+Q/zAyShtXJc8x83i9TYdbAfHZ++tUZnvjJJqFjzsdUnKsxPL6IEtBlxKkU7yzer//GQtZSV4GbldL3YA==
+
 "@radix-ui/react-compose-refs@1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@radix-ui/react-compose-refs/-/react-compose-refs-1.1.1.tgz#6f766faa975f8738269ebb8a23bad4f5a8d2faec"
   integrity sha512-Y9VzoRDSJtgFMUCoiZBDVo084VQ5hfpXxVE+NgkdNsjiDBByiImMZKKhxMwCbdHvhlENG6a833CbFkOQvTricw==
 
-"@radix-ui/react-slot@^1.1.2":
+"@radix-ui/react-context@1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-context/-/react-context-1.1.1.tgz#82074aa83a472353bb22e86f11bcbd1c61c4c71a"
+  integrity sha512-UASk9zi+crv9WteK/NU4PLvOoL3OuE6BWVKNF6hPRBtYBDXQ2u5iu3O59zUlJiTVvkyuycnqrztsHVJwcK9K+Q==
+
+"@radix-ui/react-direction@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-direction/-/react-direction-1.1.0.tgz#a7d39855f4d077adc2a1922f9c353c5977a09cdc"
+  integrity sha512-BUuBvgThEiAXh2DWu93XsT+a3aWrGqolGlqqw5VU1kG7p/ZH2cuDlM1sRLNnY3QcBS69UIz2mcKhMxDsdewhjg==
+
+"@radix-ui/react-presence@1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-presence/-/react-presence-1.1.2.tgz#bb764ed8a9118b7ec4512da5ece306ded8703cdc"
+  integrity sha512-18TFr80t5EVgL9x1SwF/YGtfG+l0BS0PRAlCWBDoBEiDQjeKgnNZRVJp/oVBl24sr3Gbfwc/Qpj4OcWTQMsAEg==
+  dependencies:
+    "@radix-ui/react-compose-refs" "1.1.1"
+    "@radix-ui/react-use-layout-effect" "1.1.0"
+
+"@radix-ui/react-primitive@2.0.2":
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-primitive/-/react-primitive-2.0.2.tgz#ac8b7854d87b0d7af388d058268d9a7eb64ca8ef"
+  integrity sha512-Ec/0d38EIuvDF+GZjcMU/Ze6MxntVJYO/fRlCPhCaVUyPY9WTalHJw54tp9sXeJo3tlShWpy41vQRgLRGOuz+w==
+  dependencies:
+    "@radix-ui/react-slot" "1.1.2"
+
+"@radix-ui/react-scroll-area@^1.2.3":
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-scroll-area/-/react-scroll-area-1.2.3.tgz#6a9a7897add739ce84b517796ee345d495893d3f"
+  integrity sha512-l7+NNBfBYYJa9tNqVcP2AGvxdE3lmE6kFTBXdvHgUaZuy+4wGCL1Cl2AfaR7RKyimj7lZURGLwFO59k4eBnDJQ==
+  dependencies:
+    "@radix-ui/number" "1.1.0"
+    "@radix-ui/primitive" "1.1.1"
+    "@radix-ui/react-compose-refs" "1.1.1"
+    "@radix-ui/react-context" "1.1.1"
+    "@radix-ui/react-direction" "1.1.0"
+    "@radix-ui/react-presence" "1.1.2"
+    "@radix-ui/react-primitive" "2.0.2"
+    "@radix-ui/react-use-callback-ref" "1.1.0"
+    "@radix-ui/react-use-layout-effect" "1.1.0"
+
+"@radix-ui/react-slot@1.1.2", "@radix-ui/react-slot@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@radix-ui/react-slot/-/react-slot-1.1.2.tgz#daffff7b2bfe99ade63b5168407680b93c00e1c6"
   integrity sha512-YAKxaiGsSQJ38VzKH86/BPRC4rh+b1Jpa+JneA5LRE7skmLPNAyeG8kPJj/oo4STLvlrs8vkf/iYyc3A5stYCQ==
   dependencies:
     "@radix-ui/react-compose-refs" "1.1.1"
+
+"@radix-ui/react-use-callback-ref@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-use-callback-ref/-/react-use-callback-ref-1.1.0.tgz#bce938ca413675bc937944b0d01ef6f4a6dc5bf1"
+  integrity sha512-CasTfvsy+frcFkbXtSJ2Zu9JHpN8TYKxkgJGWbjiZhFivxaeW7rMeZt7QELGVLaYVfFMsKHjb7Ak0nMEe+2Vfw==
+
+"@radix-ui/react-use-layout-effect@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-use-layout-effect/-/react-use-layout-effect-1.1.0.tgz#3c2c8ce04827b26a39e442ff4888d9212268bd27"
+  integrity sha512-+FPE0rOdziWSrH9athwI1R0HDVbWlEhd+FR+aSDk4uWGmSJ9Z54sdZVDQPZAinJhJXwfT+qnj969mCsT2gfm5w==
 
 "@rtsao/scc@^1.1.0":
   version "1.1.0"
@@ -2672,6 +2746,11 @@ queue-microtask@^1.2.2:
   resolved "https://registry.yarnpkg.com/queue-microtask/-/queue-microtask-1.2.3.tgz#4929228bbc724dfac43e0efb058caf7b6cfb6243"
   integrity sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==
 
+re-resizable@^6.10.3:
+  version "6.10.3"
+  resolved "https://registry.yarnpkg.com/re-resizable/-/re-resizable-6.10.3.tgz#72c42532ede0cbcaf93308bcbfed782abbf97e79"
+  integrity sha512-zvWb7X3RJMA4cuSrqoxgs3KR+D+pEXnGrD2FAD6BMYAULnZsSF4b7AOVyG6pC3VVNVOtlagGDCDmZSwWLjjBBw==
+
 react-dom@^19.0.0:
   version "19.0.0"
   resolved "https://registry.yarnpkg.com/react-dom/-/react-dom-19.0.0.tgz#43446f1f01c65a4cd7f7588083e686a6726cfb57"
@@ -2999,6 +3078,11 @@ stable-hash@^0.0.4:
   resolved "https://registry.yarnpkg.com/stable-hash/-/stable-hash-0.0.4.tgz#55ae7dadc13e4b3faed13601587cec41859b42f7"
   integrity sha512-LjdcbuBeLcdETCrPn9i8AYAZ1eCtu4ECAWtP7UleOiZ9LzVxRzzUZEoZ8zB24nhkQnDWyET0I+3sWokSDS3E7g==
 
+state-local@^1.0.6:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/state-local/-/state-local-1.0.7.tgz#da50211d07f05748d53009bee46307a37db386d5"
+  integrity sha512-HTEHMNieakEnoe33shBYcZ7NX83ACUjCu8c40iOGEZsngj9zRnkqS9j1pqQPXwobB0ZcVTk27REb7COQ0UR59w==
+
 std-env@^3.7.0:
   version "3.8.0"
   resolved "https://registry.yarnpkg.com/std-env/-/std-env-3.8.0.tgz#b56ffc1baf1a29dcc80a3bdf11d7fca7c315e7d5"
@@ -3175,10 +3259,22 @@ swr@^2.2.0:
     dequal "^2.0.3"
     use-sync-external-store "^1.4.0"
 
+tailwind-merge@2.5.4:
+  version "2.5.4"
+  resolved "https://registry.yarnpkg.com/tailwind-merge/-/tailwind-merge-2.5.4.tgz#4bf574e81fa061adeceba099ae4df56edcee78d1"
+  integrity sha512-0q8cfZHMu9nuYP/b5Shb7Y7Sh1B7Nnl5GqNr1U+n2p6+mybvRtayrQ+0042Z5byvTA8ihjlP8Odo8/VnHbZu4Q==
+
 tailwind-merge@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/tailwind-merge/-/tailwind-merge-3.0.1.tgz#0f0189966511ebcd63ef98d9eaf5607beb0d59d3"
   integrity sha512-AvzE8FmSoXC7nC+oU5GlQJbip2UO7tmOhOfQyOmPhrStOGXHU08j8mZEHZ4BmCqY5dWTCo4ClWkNyRNx1wpT0g==
+
+tailwind-variants@^0.3.1:
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/tailwind-variants/-/tailwind-variants-0.3.1.tgz#3ea13bd90b4086b41f8aef7ba8ee63597f95f86f"
+  integrity sha512-krn67M3FpPwElg4FsZrOQd0U26o7UDH/QOkK8RNaiCCrr052f6YJPBUfNKnPo/s/xRzNPtv1Mldlxsg8Tb46BQ==
+  dependencies:
+    tailwind-merge "2.5.4"
 
 tailwindcss-animate@^1.0.7:
   version "1.0.7"
@@ -3370,6 +3466,11 @@ util-deprecate@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
   integrity sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==
+
+uuid@^11.1.0:
+  version "11.1.0"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-11.1.0.tgz#9549028be1753bb934fc96e2bca09bb4105ae912"
+  integrity sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==
 
 which-boxed-primitive@^1.1.0, which-boxed-primitive@^1.1.1:
   version "1.1.1"
