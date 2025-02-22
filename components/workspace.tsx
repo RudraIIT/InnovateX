@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, use } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -61,12 +61,13 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   const [writeOnTerminal, setWriteOnTerminal] = useState<Terminal>();
   const [chats, setChats] = useState<Chat[]>([]);
   const [fileSystem, setFileSystem] = useState<FileNode[]>([]);
-  const [tabValue, setTabValue] = useState<"editor" | "preview">(initialId ? "preview" : "editor");
+  const [tabValue, setTabValue] = useState<"editor" | "preview">("editor");
   const [startingDevServer, setStartingDevServer] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [maxView, setMaxView] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
   const monaco = useMonaco();
   const wcRef = useRef<WebContainer>(null);
   const convertToFileNode = (files: { name: string; path: string; content: string }[]): FileNode[] => {
@@ -142,6 +143,37 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
     }
     return null;
   };
+  const updateFileSystem = (fileSystem: FileNode[], files: { name: string, path: string, content : string}[]) : FileNode[] => {
+    const newFileSystem = [...fileSystem];
+    files.forEach((file) => {
+      const parts = file.path.split("/");
+      let currentLevel = newFileSystem;
+
+      parts.forEach((part, index) => {
+        const existingNode = currentLevel.find((node) => node.name === part);
+
+        if (existingNode) {
+          if (index === parts.length - 1) {
+            existingNode.content = file.content;
+          } else if (existingNode.type === "folder" && existingNode.children) {
+            currentLevel = existingNode.children;
+          }
+        } else {
+          const newNode: FileNode = {
+            name: part,
+            type: index === parts.length - 1 ? "file" : "folder",
+            content: index === parts.length - 1 ? file.content : undefined,
+            children: index === parts.length - 1 ? undefined : [],
+          };
+          currentLevel.push(newNode);
+          if (newNode.type === "folder" && newNode.children) {
+            currentLevel = newNode.children;
+          }
+        }
+      });
+    });
+    return newFileSystem;
+  }
   const generateCode = async () => {
     const lastChat = chats[chats.length - 1];
     if (lastChat.type === ChatType.RESPONSE) return;
@@ -149,15 +181,25 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
     if (!prompt) return;
     const toastId = toast.loading("Thinking...");
     try {
-      const { data : { id } } = await axios.get(`/api/steps?prompt=${prompt}`);
-      toast.loading("Generating code...", { id: toastId });
-      const { data: { response : { title, files, response }, id : codeId} } = await axios.get(`/api/generate?prompt=${prompt}&steps=${id}`);
-      setTitle(title);
-      addChat(response, ChatType.RESPONSE);
-      const fileNodes = convertToFileNode(files);
-      setFileSystem(fileNodes);
-      toast.success("Code Generated", { id: toastId });
-      if (codeId) setId(codeId);
+      if (chats.length == 1) {
+        const { data : { id } } = await axios.get(`/api/steps?prompt=${prompt}`);
+        toast.loading("Generating code...", { id: toastId });
+        const { data: { response : { title, files, response }, id : codeId} } = await axios.get(`/api/generate?prompt=${prompt}&steps=${id}`);
+        setTitle(title);
+        addChat(response, ChatType.RESPONSE);
+        const fileNodes = convertToFileNode(files);
+        setFileSystem(fileNodes);
+        toast.success("Code Generated", { id: toastId });
+        setId(codeId);
+      } else {
+        toast.loading("Modifying code...", { id: toastId });
+        const { data: { response : { title, files, response } } } = await axios.get(`/api/modify/${id}?prompt=${prompt}`);
+        if (title) setTitle(title);
+        addChat(response, ChatType.RESPONSE);
+        const newFileSystem = updateFileSystem(fileSystem, files);
+        setFileSystem(newFileSystem);
+        toast.success("Code Modified", { id: toastId });
+      }
       setTabValue("preview");
     } catch (error) {
       toast.error("Failed to generate code", { id: toastId });
@@ -167,6 +209,15 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
     setChats((prev) => [...prev, { message, type }]);
     setPrompt("");
   };
+
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTo({
+        top: chatRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
+    }
+  }, [chats, showConsole])
 
   useEffect(() => {
     generateCode();
@@ -206,6 +257,16 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
       fetchCode();
     }
   },[])
+
+  useEffect(() => {
+    if (wcRef.current && !startingDevServer) {
+      const fsTree = {
+        ...convertToFileSystemTree(fileSystem),
+        ...baseConfig,
+      }
+      wcRef.current.mount(fsTree);
+    }
+  }, [fileSystem, wcRef.current, startingDevServer])
 
   useEffect(() => {
     if (monaco) {
@@ -252,7 +313,11 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   // }, [tabValue, wcRef.current]);
 
   useEffect(() => {
+    console.log("tabValue", tabValue);
+    console.log("previewUrl", previewUrl);
+    console.log("wcRef.current", wcRef.current);
     if (wcRef.current && tabValue === "preview" && !previewUrl) {
+      console.log("Starting Dev Server");
       startDevServer();
     }
   }, [wcRef.current, tabValue, previewUrl]);
@@ -367,6 +432,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
             if (tabValue === "editor") setTabValue("preview");
             else setTabValue("editor");
           }}
+          disabled={tabValue === "editor" && !wcRef.current}
         >
           {tabValue === "editor" &&
             (
@@ -486,7 +552,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
                   </Button>
                 </div>
                 <div className="flex-1 p-4 flex flex-col relative h-full overflow-y-scroll">
-                  <ScrollArea className="flex-1 p-4">
+                  <div  className="flex-1 p-4 overflow-y-scroll" ref={chatRef}>
                     {chats.length === 0 && (
                       <div className="text-center text-gray-400">
                         Describe Your website to see result
@@ -513,7 +579,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
                         <div></div>
                       </div>
                     )}
-                  </ScrollArea>
+                  </div>
                   <div className="flex items-center w-full">
                     <Input
                       placeholder="Describe here..."
