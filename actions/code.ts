@@ -1,10 +1,9 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { middleware } from "./user";
+import { currentUser } from "@clerk/nextjs/server";
 
 export const createCode = async (
-  accessToken: string,
   response: {
     title?: string;
     files: { name: string; path: string; content: string }[];
@@ -13,8 +12,9 @@ export const createCode = async (
   prompt: string,
 ) => {
   try {
-    const { email, error, status } = await middleware(accessToken);
-    if (error && status) return { error, status };
+    const session = await currentUser();
+    if (!session) return { error: 'Unauthorized', status: 401 };
+    const email = session.emailAddresses[0].emailAddress;
     const user = await db.user.findUnique({
       where: { email },
       select: {
@@ -62,10 +62,11 @@ export const createCode = async (
   }
 }
 
-export const getCode = async (accessToken: string, id: string) => {
+export const getCode = async (id: string) => {
   try {
-    const { email, error, status } = await middleware(accessToken);
-    if (error && status) return { error, status };
+    const session = await currentUser();
+    if (!session) return { error: 'Unauthorized', status: 401 };
+    const email = session.emailAddresses[0].emailAddress;
     const user = await db.user.findUnique({
       where: { email },
       select: {
@@ -114,10 +115,11 @@ export const getCode = async (accessToken: string, id: string) => {
   }
 }
 
-export const getCodesMeta = async (accessToken: string) => {
+export const getCodesMeta = async () => {
   try {
-    const { email, error, status } = await middleware(accessToken);
-    if (error && status) return { error, status };
+    const session = await currentUser();
+    if (!session) return { error: 'Unauthorized', status: 401 };
+    const email = session.emailAddresses[0].emailAddress;
     const user = await db.user.findUnique({
       where: { email },
       select: {
@@ -146,10 +148,11 @@ export const getCodesMeta = async (accessToken: string) => {
   }
 }
 
-export const deleteCode = async (accessToken: string, codeId: string) => {
+export const deleteCode = async (codeId: string) => {
   try {
-    const { email, error, status } = await middleware(accessToken);
-    if (error && status) return { error, status };
+    const session = await currentUser();
+    if (!session) return { error: 'Unauthorized', status: 401 };
+    const email = session.emailAddresses[0].emailAddress;
     const user = await db.user.findUnique({
       where: { email },
       select: {

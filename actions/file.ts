@@ -1,15 +1,15 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { middleware } from "./user";
 // @ts-expect-error FormatOutput function may not have proper typings
 import { formatOutput } from "@/helper/next-stream";
+import { currentUser } from "@clerk/nextjs/server";
 
 export const updateFiles = async (accessToken: string, codeId: string, files: { name: string; path: string; content?: string }[]) => {
   try {
-    const { email, error, status } = await middleware(accessToken);
-    if (error && status) return { error, status };
-    if (!email) return { error: 'Unauthorized', status: 401 };
+    const session = await currentUser();
+    if (!session) return { error: 'Unauthorized', status: 401 };
+    const email = session.emailAddresses[0].emailAddress;
     const user = await db.user.findUnique({
       where: { email },
       select: {

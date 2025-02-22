@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { CODE_GENERATION_PROMPT, formatPrompt } from "@/app/helpers/prompt";
+import { CODE_GENERATION_PROMPT, formatPrompt } from "@/helpers/prompt";
 import axios from "axios";
-import { parseResponse } from "@/app/helpers/parseResponse";
+import { parseResponse } from "@/helpers/parseResponse";
 import path from "path";
 import { readFileSync, rmSync } from "fs";
 
