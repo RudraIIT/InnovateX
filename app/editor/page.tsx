@@ -10,6 +10,7 @@ import {
   X
 } from "lucide-react";
 import { WebContainerManager } from "../utils/webcontainer";
+import { WebContainer } from "@webcontainer/api";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Editor, { useMonaco } from "@monaco-editor/react";
@@ -33,11 +34,19 @@ export default function CodeEditor() {
   const [writeOnTerminal, setWriteOnTerminal] = useState<Terminal>();
   const editorRef = useRef<any>(null);
   const monaco = useMonaco();
+  const wcRef = useRef<WebContainer>(null);
 
   // Configure Monaco editor on mount
+  // useEffect(() => {
+  //   WebContainerManager.getInstance();
+  // },[]);
+
   useEffect(() => {
-    WebContainerManager.getInstance();
-  },[]);
+    const bootWebContainer = async () => {
+      wcRef.current = await WebContainer.boot();
+    };
+    bootWebContainer();
+  },[])
 
   useEffect(() => {
     if (monaco) {
@@ -62,7 +71,26 @@ export default function CodeEditor() {
     try {
       const editorValue = editorRef.current?.getValue() || "";
       setCode(editorValue); // Update code state with the latest editor value
-      const output = await WebContainerManager.runCode(editorValue);
+      const wc = wcRef.current;
+      if(!wc) return;
+      await wc.mount({
+        "index.js": {
+          file: {
+            contents: editorValue,
+          },
+        },
+      });
+
+      const process = await wc.spawn("node", ["./index.js"]);
+      let output = "";
+
+      process.output.pipeTo(new WritableStream({
+        write: (chunk) => {
+          output += chunk;
+          setOutput(output);
+          writeOnTerminal?.write(chunk);
+        },
+      }));
       setOutput(`Executing code...\n${editorValue}\n\nOutput:\n${output}`);
     } catch (error: any) {
       setOutput(`Error: ${error.message}`);
