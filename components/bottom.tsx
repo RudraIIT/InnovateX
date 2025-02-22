@@ -4,16 +4,19 @@ import { IconBrandFacebook, IconBrandTwitter, IconBrandYoutube } from "@tabler/i
 
 const BottomProps: React.FC = () => {
   return (
-    <div className="text-white flex flex-col min-h-screen overflow-hidden bg-[#090b0c]">
+    <div className="text-white flex flex-col min-h-screen overflow-hidden bg-[#090b0c] md:mt-16">
       {/* Hero Section */}
       <div className="flex flex-col items-center justify-center text-center pt-20 pb-32 relative px-4">
         <div className="absolute top-0 w-1/2 md:w-1/3 h-80 bg-gradient-to-r from-[#b446d3] to-[#1a83c9] rounded-b-full blur-2xl opacity-30"></div>
 
-        {/* Semi-circle Shape */}
-        <div
-          data-rf="frame.layer"
-          className="absolute flex flex-row justify-center items-center aspect-[10/4] w-screen bottom-[70%] bg-[#090b0c] rounded-[50%] border-b border-slate-600"
-        ></div>
+      {/* Semi-circle Shape */}
+      <div
+        data-rf="frame.layer"
+        className="absolute flex flex-row justify-center items-center w-full max-w-screen aspect-[10/4] bottom-[80%] 
+        bg-[#090b0c] rounded-b-[50%] border-b border-slate-600 
+        md:aspect-[7/3] md:bottom-[50%] 
+        lg:aspect-[10/4] lg:bottom-[70%]"
+      ></div>
 
         {/* Logo */}
         <div className="relative z-10 mb-6">
