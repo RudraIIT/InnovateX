@@ -1,6 +1,8 @@
-import * as React from "react"
-import {  FileCode, GalleryVerticalEnd, MessageSquare, Settings } from 'lucide-react'
+'use client'
 
+import * as React from "react"
+import { useState } from "react"
+import { FileCode, GalleryVerticalEnd, LoaderIcon, MessageSquare, Settings } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import {
   Sidebar,
@@ -15,18 +17,57 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { Textarea } from "./ui/textarea"
-import { UserButton } from "@clerk/nextjs"
-import { auth, currentUser } from "@clerk/nextjs/server"
+import { UserButton, useUser } from "@clerk/nextjs"
 import { FileUploader } from "./file-upload"
 import { Navbar } from "./navbar"
 import { Templates } from "./templates"
+import { useRouter } from "next/navigation"
 
-export async function Prompt() {
-  const user = await currentUser();
+export function Prompt() {
+  const { user, isSignedIn } = useUser()
+  const [prompt, setPrompt] = useState("")
+  const [loading, setLoading] = useState(false)
+  const router = useRouter();
 
-  const { userId, redirectToSignIn } = await auth();
+  // Handle form submission
+  const handleGenerate = async () => {
+    if (!isSignedIn || !user?.id) {
+      console.error("User not signed in")
+      return
+    }
 
-  if (!userId) return redirectToSignIn()
+    try {
+      console.log('Sending prompt:', prompt, user.id)
+      setLoading(true)
+
+      const response = await fetch('/api/prompt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          prompt: prompt,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send prompt')
+      }
+
+      const data = await response.json()
+      console.log('Response from API:', data)
+      setPrompt("")
+      router.push('/editor')
+      setLoading(false)
+    } catch (error) {
+      console.error('Error sending prompt:', error)
+    }
+  }
+
+  if (!isSignedIn) {
+    return <div>Please sign in to continue</div>
+  }
 
   return (
     <SidebarProvider>
@@ -76,37 +117,42 @@ export async function Prompt() {
           <SidebarFooter className="p-4 py-3 flex flex-row items-center gap-4 bg-background m-4 rounded-xl">
             <UserButton />
             <div className="text-sm font-medium">
-                {user?.firstName + " " + user?.lastName}
+              {user?.firstName + " " + user?.lastName}
             </div>
-            </SidebarFooter>
+          </SidebarFooter>
           <SidebarRail />
         </Sidebar>
         <main className="flex-1 overflow-hidden px-4">
           <div className="block md:hidden">
-          <Navbar />
+            <Navbar />
           </div>
           <div className="container flex max-w-5xl flex-col items-center justify-center gap-8 py-12 md:py-24">
             <h1 className="text-center text-4xl font-bold tracking-tight md:text-6xl">
               What can I help you {' '}
               <span className="leading-7 bg-gradient-to-l from-indigo-400 from-10% via-sky-400 via-30% to-emerald-300 to-90% bg-clip-text text-transparent">
-              Innovate?
-            </span>
+                Innovate?
+              </span>
             </h1>
             <div className="w-full max-w-2xl">
-            <Textarea
+              <Textarea
                 className="h-28 rounded-lg px-4 py-4 text-sm text-left align-top leading-normal placeholder:text-left"
                 placeholder="Ask InnovateX to build anything..."
-                />
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+              />
               <div className="flex flex-col w-full items-center mt-4 gap-6"> 
                 <FileUploader />
-                <Button className="w-full">Generate</Button>
+                <Button className="w-full" onClick={handleGenerate}>
+                  <LoaderIcon className={`w-6 h-6 animate-spin ${loading ? 'block' : 'hidden'}`} />
+                  Generate
+                </Button>
               </div>
             </div>
             <div>
               <div className="text-4xl font-bold tracking-tight md:text-6xl leading-7 bg-gradient-to-l from-indigo-400 from-10% via-sky-400 via-30% to-emerald-300 to-90% bg-clip-text text-transparent pt-8">
                 Templates
               </div>
-              <div  className="text-lg font-medium text-gray-500 mb-8 mt-4">
+              <div className="text-lg font-medium text-gray-500 mb-8 mt-4">
                 Use our templates to get started quickly
               </div>
               <Templates />

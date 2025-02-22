@@ -23,7 +23,7 @@ export const Intro = () => {
         Describe your idea, and we’ll generate a website instantly—no coding needed.
       </span>
       <button
-        onClick={() => router.push('/generate')}
+        onClick={() => router.push('/dashboard')}
         className="inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-primary-50 bg-[#635dff] hover:bg-opacity-90 py-2 px-4 rounded-full h-10 lg:h-14 font-normal text-sm lg:text-lg leading-5 gap-1 mt-4"
       >
         Generate Now

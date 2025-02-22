@@ -42,11 +42,11 @@ const BottomProps: React.FC = () => {
 
         {/* Heading & Subtext */}
         <h1 className="text-3xl md:text-5xl font-semibold relative z-10 leading-tight">
-          The missing platform to build your AI apps
+        Build & deploy AI-powered websites in minutes
         </h1>
 
         <p className="mt-4 text-gray-400 relative z-10 max-w-xl text-sm md:text-lg">
-          Use it to build your own AI powered apps. No coding required.
+        Create and launch in one click—no coding needed.
         </p>
 
         {/* Buttons */}
@@ -98,18 +98,18 @@ const BottomProps: React.FC = () => {
             <h3 className="text-white font-semibold">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="hover:text-indigo-400">
-                  Recipes
+                <Link href="/" className="hover:text-indigo-400">
+                  Home
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-indigo-400">
-                  Book a demo
+                <Link href="/dashboard" className="hover:text-indigo-400">
+                  Dashboard
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-indigo-400">
-                  Pricing
+                <Link href="/editor" className="hover:text-indigo-400">
+                  Editor
                 </Link>
               </li>
             </ul>
@@ -133,7 +133,7 @@ const BottomProps: React.FC = () => {
           </div>
         </div>
         <div className="text-center mt-10">
-        {`"Empowering innovation, Website in a click."`}
+        {`"AI-powered websites, deployed in a click."`}
         <div>
         © 2025 InnovateX. All rights reserved.
         </div>
