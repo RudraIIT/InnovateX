@@ -27,6 +27,7 @@ const stringifyCodeFiles = (codeFiles: { name: string, path: string, content: st
 export async function GET(req: NextRequest, { params } : ModifyRouteParams) {
   const { codeId } = await params;
   const prompt = req.nextUrl.searchParams.get('prompt');
+  const system = req.nextUrl.searchParams.get('system');
   try {
     if (!prompt || !codeId) return NextResponse.error();
     const code = await db.code.findFirst({
@@ -78,25 +79,27 @@ export async function GET(req: NextRequest, { params } : ModifyRouteParams) {
         })}
       )
     );
-    await db.code.update({
-      where: {
-        id: codeId,
-      },
-      data: {
-        chat: {
-          create: [
-            {
-              message: prompt,
-              type: 'PROMPT',
-            },
-            {
-              message: response.response,
-              type: 'RESPONSE',
-            },
-          ]
+    if (!system) {
+      await db.code.update({
+        where: {
+          id: codeId,
+        },
+        data: {
+          chat: {
+            create: [
+              {
+                message: prompt,
+                type: 'PROMPT',
+              },
+              {
+                message: response.response,
+                type: 'RESPONSE',
+              },
+            ]
+          }
         }
-      }
-    })
+      })
+    }
     return NextResponse.json({ response }, { status: 200 });
   } catch (error) {
     console.log(error);

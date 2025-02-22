@@ -31,6 +31,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { baseConfig } from "@/helpers/baseConfig";
 import { useRouter } from "next/navigation";
 import { getCode } from "@/actions/code";
+import { generateCode as chainCodeGeneration } from "@/helpers/promptChain";
 
 interface FileNode {
   name: string;
@@ -65,6 +66,8 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   const [startingDevServer, setStartingDevServer] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [maxView, setMaxView] = useState(false);
+  const [orgFileSystem, setOrgFileSystem] = useState<FileNode[]>([]);
+  const [wcInitialized, setWcInitialized] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -184,7 +187,8 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
       if (chats.length == 1) {
         const { data : { id } } = await axios.get(`/api/steps?prompt=${prompt}`);
         toast.loading("Generating code...", { id: toastId });
-        const { data: { response : { title, files, response }, id : codeId} } = await axios.get(`/api/generate?prompt=${prompt}&steps=${id}`);
+        // const { data: { response : { title, files, response }, id : codeId} } = await axios.get(`/api/generate?prompt=${prompt}&steps=${id}`);
+        const { response : { title, files, response }, id : codeId } = await chainCodeGeneration(prompt, toastId);
         setTitle(title);
         addChat(response, ChatType.RESPONSE);
         const fileNodes = convertToFileNode(files);
@@ -209,6 +213,39 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
     setChats((prev) => [...prev, { message, type }]);
     setPrompt("");
   };
+  const compareFileSystem = (fs1: FileNode[], fs2: FileNode[]) => {
+    if (fs1.length !== fs2.length) return false;
+    for (let i = 0; i < fs1.length; i++) {
+      if (fs1[i].name !== fs2[i].name || fs1[i].type !== fs2[i].type) return false;
+      if (fs1[i].type === "file" && fs1[i].content !== fs2[i].content) return false;
+      if (fs1[i].type === "folder" && fs1[i].children && fs2[i].children && !compareFileSystem(fs1[i].children ?? [], fs2[i].children ?? [])) return false;
+    }
+    return true;
+  }
+  const findPathUsingName = (fileSystem: FileNode[], fileName: string): string | null => {
+    for (const node of fileSystem) {
+      if (node.name === fileName) {
+        return node.name;
+      } else if (node.type === "folder" && node.children) {
+        const result = findPathUsingName(node.children, fileName);
+        if (result) return `${node.name}/${result}`;
+      }
+    }
+    return null;
+  }
+  const handleCodeChange = (value: string | undefined) => {
+    if (value === undefined) return;
+    setCode(value);
+    if (orgFileSystem.length === 0) setOrgFileSystem(fileSystem);
+    const updatedFilePath = findPathUsingName(fileSystem, activeFile);
+    if (!updatedFilePath) return;
+    const newFileSystem = updateFileSystem(fileSystem, [{ name: activeFile, path: updatedFilePath, content: value }]);
+    if (!compareFileSystem(fileSystem, newFileSystem)) {
+      setFileSystem(newFileSystem);
+    } else {
+      setOrgFileSystem([]);
+    }
+  }
 
   useEffect(() => {
     if (chatRef.current) {
@@ -234,6 +271,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
     const bootWebContainer = async () => {
       wcRef.current = await WebContainer.boot();
       console.log("WebContainer initialized");
+      setWcInitialized(true);
     };
     bootWebContainer();
     if (id) {
@@ -432,7 +470,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
             if (tabValue === "editor") setTabValue("preview");
             else setTabValue("editor");
           }}
-          disabled={tabValue === "editor" && !wcRef.current}
+          disabled={tabValue === "editor" && !wcInitialized}
         >
           {tabValue === "editor" &&
             (
@@ -486,6 +524,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
                         width="100%"
                         language={getFileLanguage(activeFile)}
                         value={code}
+                        onChange={(value) => handleCodeChange(value || "")}
                         onMount={handleEditorDidMount}
                         beforeMount={handleEditorWillMount}
                         theme="vs-dark"
