@@ -1,5 +1,5 @@
-import { parseResponse } from "@/app/helpers/parseResponse";
-import { CODE_MODIFICATION_PROMPT, formatPrompt } from "@/app/helpers/prompt";
+import { parseResponse } from "@/helpers/parseResponse";
+import { CODE_MODIFICATION_PROMPT, formatPrompt } from "@/helpers/prompt";
 import { db } from "@/lib/db";
 import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";

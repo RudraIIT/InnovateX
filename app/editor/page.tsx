@@ -7,8 +7,8 @@ import {
   File,
   Folder,
   Play,
+  X
 } from "lucide-react";
-import { WebContainerManager } from "../utils/webcontainer";
 import { WebContainer } from "@webcontainer/api";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
