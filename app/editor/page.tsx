@@ -4,14 +4,17 @@ import { useState, useRef, useEffect } from "react";
 import {
   ChevronDown,
   ChevronRight,
+  Code,
   File,
   Folder,
+  Maximize,
   MessageCircle,
+  Minimize,
   Play,
   Sparkles,
   X
 } from "lucide-react";
-import { WebContainer } from "@webcontainer/api";
+import { FileSystemTree, WebContainer } from "@webcontainer/api";
 import { WebContainerManager } from "@/utils/webcontainer";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,6 +28,9 @@ import axios from "axios";
 import { toast } from "sonner";
 import { getFileLanguage } from "@/helpers/Editor/fileLanguage";
 import { setPrismaLanguage } from "@/helpers/Editor/customLanguage";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import path from "path";
+import { baseConfig } from "@/helpers/baseConfig";
 
 interface FileNode {
   name: string;
@@ -50,6 +56,10 @@ export default function CodeEditor() {
   const [writeOnTerminal, setWriteOnTerminal] = useState<Terminal>();
   const [chats, setChats] = useState<Chat[]>([]);
   const [fileSystem, setFileSystem] = useState<FileNode[]>([]);
+  const [tabValue, setTabValue] = useState<"editor" | "preview">("editor");
+  const [startingDevServer, setStartingDevServer] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [maxView, setMaxView] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const monaco = useMonaco();
@@ -97,6 +107,25 @@ export default function CodeEditor() {
 
     return buildTree(fileMap);
   };
+  const convertToFileSystemTree = (nodes: FileNode[]): FileSystemTree => {
+    const result: FileSystemTree = {};
+
+    nodes.forEach((node) => {
+      if (node.type === "folder" && node.children) {
+        result[node.name] = {
+          directory: convertToFileSystemTree(node.children),
+        };
+      } else if (node.type === "file") {
+        result[node.name] = {
+          file: {
+            contents: node.content || "",
+          },
+        };
+      }
+    });
+
+    return result;
+  };
   const findFileContent = (fileSystem: FileNode[], fileName: string): string | null => {
     for (const node of fileSystem) {
       if (node.type === "file" && node.name === fileName) {
@@ -122,7 +151,8 @@ export default function CodeEditor() {
       addChat(response, ChatType.RESPONSE);
       const fileNodes = convertToFileNode(files);
       setFileSystem(fileNodes);
-      toast.success("Code generated", { id: toastId });
+      setTabValue("preview");
+      toast.success("Code Generated", { id: toastId });
     } catch (error) {
       toast.error("Failed to generate code", { id: toastId });
     }
@@ -142,19 +172,13 @@ export default function CodeEditor() {
       return content || "";
     })
   },[activeFile, fileSystem])
-  // const wcRef = useRef<WebContainer>(null);
 
-  // Configure Monaco editor on mount
   useEffect(() => {
-    WebContainerManager.getInstance();
-  },[]);
-
-  // useEffect(() => {
-  //   const bootWebContainer = async () => {
-  //     wcRef.current = await WebContainer.boot();
-  //   };
-  //   bootWebContainer();
-  // },[])
+    const bootWebContainer = async () => {
+      wcRef.current = await WebContainer.boot();
+    };
+    bootWebContainer();
+  },[])
 
   useEffect(() => {
     if (monaco) {
@@ -194,19 +218,62 @@ export default function CodeEditor() {
   };
 
 
-  const handleRunCode = async () => {
-    try {
-      const editorValue = editorRef.current?.getValue() || "";
-      setCode(editorValue); // Update code state with the latest editor value
-      const output = await WebContainerManager.runCode(editorValue);
-      writeOnTerminal?.write(output);
-      writeOnTerminal?.write("$ ");
-      setOutput(`Executing code...\n${editorValue}\n\nOutput:\n${output}`);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      setOutput(`Error: ${error.message}`);
+  const startDevServer = async () => {
+    if (startingDevServer) return;
+    if (previewUrl) return;
+    if (!wcRef.current || !fileSystem) {
+      console.error("WebContainer or FileSystem not initialized");
+      return;
     }
+    if (!writeOnTerminal) {
+      console.error("Terminal failed to initialize");
+      toast.error("Terminal failed to initialize");
+      return;
+    }
+    setStartingDevServer(true);
+    try {
+      const fsTree = {
+        ...convertToFileSystemTree(fileSystem),
+        ...baseConfig,
+      }
+      await wcRef.current.mount(fsTree);
+      const packageJson = await wcRef.current.fs.readFile('package.json', 'utf-8').catch(() => null);
+      if (!packageJson) {
+        throw new Error("package.json not found");
+      }
+      writeOnTerminal.write('> \x1b[33mnpm\x1b[0m \x1b[97minstall\x1b[0m\r\n');
+      const installDependencies = await wcRef.current.spawn('npm', ['install']);
+      installDependencies.output.pipeTo(new WritableStream({
+        write(chunk) {
+          writeOnTerminal.write('\r'+chunk);
+        }
+      }));
+      const exitCode = await installDependencies.exit;
+      if (exitCode !== 0) {
+        throw new Error("Failed to install dependencies");
+      }
+      writeOnTerminal.write('> \x1b[33mnpm\x1b[0m \x1b[97mrun dev\x1b[0m\r\n');
+      const startProcess = await wcRef.current.spawn('npm', ['run', 'dev']);
+      startProcess.output.pipeTo(new WritableStream({
+        write(chunk) {
+          writeOnTerminal.write('\r\n'+chunk);
+        }
+      }));
+      wcRef.current.on('server-ready', (_port, url) => {
+        setPreviewUrl(url);
+      });
+    } catch (error : any) {
+      console.error("Error in startDevServer:", error);
+      toast?.error(error?.message || "Failed to start development server");
+    }
+    setStartingDevServer(false);
   };
+
+  useEffect(() => {
+    if (tabValue === "preview") {
+      startDevServer();
+    }
+  }, [tabValue])
 
   const renderFileTree = (nodes: FileNode[], path = "") => {
     return nodes.map((node) => {
@@ -233,7 +300,10 @@ export default function CodeEditor() {
           className={`flex items-center cursor-pointer py-1 px-2 rounded ml-6 ${
             activeFile === node.name ? "bg-[#2A2F35] text-white" : "hover:bg-[#2A2F35]"
           }`}
-          onClick={() => setActiveFile(node.name)}
+          onClick={() => {
+            setActiveFile(node.name)
+            setTabValue("editor")
+          }}
         >
           <File className="h-4 w-4 mr-2 text-[#7982a9]" />
           <span>{node.name}</span>
@@ -249,9 +319,28 @@ export default function CodeEditor() {
           <Folder className="h-4 w-4 mr-2" />
           Code Editor
         </Button>
-        <Button variant="default" size="sm" className="bg-[#238636] hover:bg-[#2ea043]" onClick={handleRunCode}>
-          <Play className="h-4 w-4 mr-2" />
-          Run
+        <Button
+          variant="default"
+          size="sm"
+          className="bg-[#238636] hover:bg-[#2ea043]"
+          onClick={() => {
+            if (tabValue === "editor") setTabValue("preview");
+            else setTabValue("editor");
+          }}
+        >
+          {tabValue === "editor" &&
+            (
+              <>
+                <Play className="h-4 w-4 mr-2" />
+                Run
+              </>
+            )}
+          {tabValue === "preview" && (
+            <>
+              <Code className="h-4 w-4 mr-2" />
+              Code
+            </>
+          )}
         </Button>
       </header>
       <ResizablePanelGroup
@@ -278,31 +367,57 @@ export default function CodeEditor() {
               defaultSize={100}
               className="border-b border-[#2A2F35] bg-[#1B1F23] flex-grow"
             >
-              <div className="flex flex-col h-full">
-                <div className="border-b border-[#2A2F35] px-4 py-2 bg-[#1E2227]">
-                  <span className="text-sm">{activeFile}</span>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  {!activeFile && <div className="flex items-center justify-center h-full text-gray-400">Select a file to view</div>}
-                  {activeFile && <Editor
-                    height="100%"
-                    width="100%"
-                    language={getFileLanguage(activeFile)}
-                    value={code}
-                    onMount={handleEditorDidMount}
-                    beforeMount={handleEditorWillMount}
-                    theme="vs-dark"
-                    options={{
-                      wordWrap: "on",
-                      formatOnType: true,
-                      formatOnPaste: true,
-                      minimap: { enabled: true },
-                      automaticLayout: true,
-                      scrollBeyondLastLine: false
-                    }}
-                  />}
-                </div>
-              </div>
+              <Tabs value={tabValue} onValueChange={(value) => setTabValue(value as "editor" | "preview")} className="h-full">
+                <TabsContent value="editor" className="h-full">
+                  <div className="flex flex-col h-full">
+                    <div className="border-b border-[#2A2F35] px-4 py-2 bg-[#1E2227]">
+                      <span className="text-sm">{activeFile}</span>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      {!activeFile && <div className="flex items-center justify-center h-full text-gray-400">Select a file to view</div>}
+                      {activeFile && <Editor
+                        height="100%"
+                        width="100%"
+                        language={getFileLanguage(activeFile)}
+                        value={code}
+                        onMount={handleEditorDidMount}
+                        beforeMount={handleEditorWillMount}
+                        theme="vs-dark"
+                        options={{
+                          wordWrap: "on",
+                          formatOnType: true,
+                          formatOnPaste: true,
+                          minimap: { enabled: true },
+                          automaticLayout: true,
+                          scrollBeyondLastLine: false
+                        }}
+                      />}
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="preview" className="h-full">
+                  <div className={`h-full ${maxView ? "fixed inset-0 z-50" : "relative"}`}>
+                    {!previewUrl && (
+                      <div className="flex items-center justify-center h-full text-gray-400">
+                        Starting development server...
+                      </div>
+                    )}
+                    {previewUrl && (
+                      <>
+                        <iframe src={previewUrl} className="w-full h-full bg-white" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-4 right-4"
+                          onClick={() => setMaxView((prev) => !prev)}
+                        >
+                          {maxView ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </ResizablePanel>
             <ResizableHandle/>
             <ResizablePanel
@@ -334,7 +449,7 @@ export default function CodeEditor() {
                   <ScrollArea className="flex-1 p-4">
                     {chats.length === 0 && (
                       <div className="text-center text-gray-400">
-                        Descrbe Your website to see result
+                        Describe Your website to see result
                       </div>
                     )}
                     {chats.map((chat, index) => (
@@ -351,6 +466,13 @@ export default function CodeEditor() {
                         </div>
                       </div>
                     ))}
+                    {chats.length > 0 && chats[chats.length - 1].type === ChatType.PROMPT && (
+                      <div className="bouncing-loader">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                      </div>
+                    )}
                   </ScrollArea>
                   <div className="flex items-center w-full">
                     <Input
@@ -375,10 +497,10 @@ export default function CodeEditor() {
         )}
       </ResizablePanelGroup>
       <footer className="h-6 border-t border-[#2A2F35] px-4 text-xs text-gray-400 bg-[#1B1F23] flex items-center">
-        <span>JavaScript</span>
+        <span>{activeFile ? getFileLanguage(activeFile) : "No File"}</span>
         {!showConsole && (
           <Button variant="ghost" size="sm" className="ml-auto text-xs" onClick={() => setShowConsole(true)}>
-            Show Console
+            Show Chat
           </Button>
         )}
       </footer>
