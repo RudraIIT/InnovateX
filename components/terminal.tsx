@@ -6,6 +6,7 @@ import { FitAddon } from "xterm-addon-fit";
 import { WebContainerManager } from "@/utils/webcontainer";
 import "xterm/css/xterm.css";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const dynamicHighlight = (text: string): string => {
   const commandRegex = /^\s*([\w-]+)(?=\s|$)/;
   const optionRegex = /(\s-\w|\s--\w[\w-]*)/g;
