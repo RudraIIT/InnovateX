@@ -6,7 +6,10 @@ import {
   ChevronRight,
   File,
   Folder,
+  MessageCircle,
   Play,
+  Sparkles,
+  X,
 } from "lucide-react";
 import { WebContainerManager } from "../utils/webcontainer";
 import { WebContainer } from "@webcontainer/api";
@@ -16,11 +19,18 @@ import Editor, { useMonaco } from "@monaco-editor/react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Terminal } from "xterm";
 import { TerminalComponent } from "@/components/terminal";
+import { ChatType } from "@prisma/client";
+import { Input } from "@/components/ui/input";
 
 interface FileNode {
   name: string;
   type: "file" | "folder";
   children?: FileNode[];
+}
+
+interface Chat {
+  message: string;
+  type: ChatType;
 }
 
 export default function CodeEditor() {
@@ -31,6 +41,7 @@ export default function CodeEditor() {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["root"]));
   const [activeFile, setActiveFile] = useState<string>("index.js");
   const [writeOnTerminal, setWriteOnTerminal] = useState<Terminal>();
+  const [chats, setChats] = useState<Chat[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const monaco = useMonaco();
@@ -163,7 +174,7 @@ export default function CodeEditor() {
         {showFileTree && (
           <>
             <ResizablePanel
-              defaultSize={200}
+              defaultSize={100}
               className="border-r border-[#2A2F35] bg-[#1B1F23]"
             >
               <ScrollArea className="h-full p-4">{renderFileTree(fileSystem)}</ScrollArea>
@@ -171,7 +182,7 @@ export default function CodeEditor() {
             <ResizableHandle/>
           </>
         )}
-        <ResizablePanel defaultSize={400} className="border-b border-[#2A2F35] h-full">
+        <ResizablePanel defaultSize={450} className="border-b border-[#2A2F35] h-full">
           <ResizablePanelGroup direction="vertical" className="flex flex-col h-full">
             <ResizablePanel
               defaultSize={100}
@@ -201,20 +212,49 @@ export default function CodeEditor() {
           <>
             <ResizableHandle/>
             <ResizablePanel
-              defaultSize={280}
+              defaultSize={150}
               className="border-l border-[#2A2F35] bg-[#1B1F23]"
               onResize={(size) => {if (size < 2) setShowConsole(false)}}
             >
               <div className="h-full flex flex-col">
                 <div className="border-b border-[#2A2F35] p-2 flex justify-between">
-                  <span className="text-sm">Console</span>
+                  <span className="text-sm">Chat</span>
                   <Button variant="ghost" size="icon" onClick={() => setShowConsole(false)}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                <ScrollArea className="flex-1 p-4">
-                  <pre className="font-mono text-sm text-[#2ea043] whitespace-pre-wrap">{output}</pre>
-                </ScrollArea>
+                <div className="flex-1 p-4 flex flex-col relative h-full overflow-y-scroll">
+                  <ScrollArea className="flex-1 p-4">
+                    {chats.length === 0 && (
+                      <div className="text-center text-gray-400">
+                        Descrbe Your website to see result
+                      </div>
+                    )}
+                    {chats.map((chat, index) => (
+                      <div key={index} className="mb-5 flex items-start justify-start">
+                        <div className="bg-[#2A2F35] p-2 rounded-full inline-block">
+                          {chat.type === ChatType.PROMPT ? (
+                            <MessageCircle className="h-5 w-5 text-[#7982a9]" />
+                          ) : (
+                            <Sparkles className="h-5 w-5 text-[#238636]" />
+                          )}
+                        </div>
+                        <div className={`ml-2 flex-grow px-5 ${chat.type === ChatType.PROMPT ? "bg-[#303030] py-2 rounded-full" : ""}`}>
+                          <span className="text-sm">{chat.message}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                  <div className="flex items-center w-full">
+                    <Input
+                      placeholder="Describe here..."
+                      className="flex-1 min-w-10"
+                    />
+                    <Button variant="default" size="sm" className="ml-2">
+                      Send
+                    </Button>
+                  </div>
+                </div>
               </div>
             </ResizablePanel>
           </>
