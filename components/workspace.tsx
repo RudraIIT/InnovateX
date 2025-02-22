@@ -157,7 +157,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
       const fileNodes = convertToFileNode(files);
       setFileSystem(fileNodes);
       toast.success("Code Generated", { id: toastId });
-      if (codeId) navigate.push(`/editor/${codeId}`);
+      if (codeId) setId(codeId);
       setTabValue("preview");
     } catch (error) {
       toast.error("Failed to generate code", { id: toastId });
@@ -182,6 +182,10 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   useEffect(() => {
     const bootWebContainer = async () => {
       wcRef.current = await WebContainer.boot();
+      console.log("WebContainer initialized");
+      if (tabValue === "preview") {
+        startDevServer();
+      }
     };
     bootWebContainer();
     if (id) {
@@ -205,10 +209,6 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
       fetchCode();
     }
   },[])
-
-  useEffect(() => {
-    if (tabValue === "preview") startDevServer();
-  }, [fileSystem, tabValue])
 
   useEffect(() => {
     if (monaco) {
@@ -247,12 +247,20 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
     `, 'file:///node_modules/@types/react/index.d.ts');
   };
 
+  useEffect(() => {
+    if (tabValue === "preview") {
+      startDevServer();
+    }
+  }, [tabValue, wcRef.current])
 
   const startDevServer = async () => {
-    if (startingDevServer) return;
-    if (previewUrl) return;
-    if (!wcRef.current || !fileSystem) {
-      console.error("WebContainer or FileSystem not initialized");
+    if (startingDevServer || previewUrl) return;
+    if (!wcRef.current) {
+      console.error("WebContainer not initialized");
+      return;
+    }
+    if (!fileSystem) {
+      console.error("File System not initialized");
       return;
     }
     if (!writeOnTerminal) {
@@ -298,12 +306,6 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
     }
     setStartingDevServer(false);
   };
-
-  useEffect(() => {
-    if (tabValue === "preview") {
-      startDevServer();
-    }
-  }, [tabValue])
 
   const renderFileTree = (nodes: FileNode[], path = "") => {
     return nodes.map((node) => {
