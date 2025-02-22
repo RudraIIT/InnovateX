@@ -3,6 +3,7 @@
 import { Dispatch, SetStateAction, useEffect, useRef } from "react";
 import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
+import { WebContainerManager } from "@/utils/webcontainer";
 import "xterm/css/xterm.css";
 
 const dynamicHighlight = (text: string): string => {
@@ -22,9 +23,10 @@ interface TerminalComponentProps {
   setWriteOnTerminal: Dispatch<SetStateAction<Terminal | undefined>>;
 }
 
-export const TerminalComponent : React.FC<TerminalComponentProps> = ({ setWriteOnTerminal }) => {
+export const TerminalComponent: React.FC<TerminalComponentProps> = ({ setWriteOnTerminal }) => {
   const terminalRef = useRef<HTMLDivElement | null>(null);
   const termInstance = useRef<Terminal | null>(null);
+  const inputBuffer = useRef<string>("");
   useEffect(() => {
     if (!terminalRef.current) return;
     const term = new Terminal({
@@ -44,16 +46,40 @@ export const TerminalComponent : React.FC<TerminalComponentProps> = ({ setWriteO
     term.loadAddon(fitAddon);
     term.open(terminalRef.current);
     fitAddon.fit();
-    const originalWrite = term.write;
-    term.write = (text: string) => {
-      console.log("terminal write", text);
-      if (!text) return;
-      const styledText = dynamicHighlight(text);
-      return originalWrite.call(term, styledText);
-    };
+
+    term.writeln("\x1b[32mWelcome to InnovateX terminal!!\x1b[0m");
+
+    term.onData(async (data: string) => {
+      if (data === "\r") {
+        // User pressed Enter, execute the code
+        term.writeln("\r\n");
+        const code = inputBuffer.current.trim();
+        inputBuffer.current = "";
+        if (code) {
+          console.log("Executing:", code);
+          const output = await WebContainerManager.runTerminalCommands(code);
+          term.writeln("\x1b[37m" + output + "\x1b[0m");
+          console.log("Output:", output);
+        }
+        term.write("$ ");
+      } else if (data === "\u007F") {
+        // Handle backspace
+        if (inputBuffer.current.length > 0) {
+          inputBuffer.current = inputBuffer.current.slice(0, -1);
+          term.write("\b \b");
+        }
+      } else {
+        // Collect input
+        inputBuffer.current += data;
+        term.write(data);
+      }
+    });
+
+    term.write("$ ");
+
     termInstance.current = term;
     setWriteOnTerminal(term);
-    term.writeln("\x1b[32mWelcome to InnovateX terminal!!\x1b[0m");
+
     return () => {
       term.dispose();
       setWriteOnTerminal(undefined);

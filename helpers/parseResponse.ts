@@ -50,7 +50,7 @@ export const parseResponse = (llm_response : string) => {
             response : onGoingData.trimStart().trimStart(),
             end: true
           }
-          response.response = data.response.split(`xml`)[1].trimStart().trimStart();
+          response.response = data.response.includes('xml') ? data.response.split(`xml`)[1]?.trimStart().trimStart() || data.response : data.response;
         } else if (currentTag == "/CodeParserName") {
           onGoingData = onGoingData.replace("```xml", "");
           name = onGoingData.trimStart().trimStart();

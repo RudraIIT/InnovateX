@@ -12,6 +12,7 @@ import {
   X
 } from "lucide-react";
 import { WebContainer } from "@webcontainer/api";
+import { WebContainerManager } from "@/utils/webcontainer";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Editor, { Monaco, useMonaco } from "@monaco-editor/react";
@@ -22,7 +23,6 @@ import { ChatType } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 import { toast } from "sonner";
-import path from "path";
 import { getFileLanguage } from "@/helpers/Editor/fileLanguage";
 import { setPrismaLanguage } from "@/helpers/Editor/customLanguage";
 
@@ -78,12 +78,21 @@ export default function CodeEditor() {
     });
 
     const buildTree = (nodes: { [key: string]: FileNode }): FileNode[] => {
-      return Object.values(nodes).map((node) => {
+      const nodeArray = Object.values(nodes).map((node) => {
         if (node.children) {
           node.children = buildTree(node.children as unknown as { [key: string]: FileNode });
         }
         return node;
       });
+
+      nodeArray.sort((a, b) => {
+        if (a.type === b.type) {
+          return a.name.localeCompare(b.name);
+        }
+        return a.type === "folder" ? -1 : 1;
+      });
+
+      return nodeArray;
     };
 
     return buildTree(fileMap);
@@ -133,18 +142,19 @@ export default function CodeEditor() {
       return content || "";
     })
   },[activeFile, fileSystem])
+  // const wcRef = useRef<WebContainer>(null);
 
   // Configure Monaco editor on mount
-  // useEffect(() => {
-  //   WebContainerManager.getInstance();
-  // },[]);
-
   useEffect(() => {
-    const bootWebContainer = async () => {
-      wcRef.current = await WebContainer.boot();
-    };
-    bootWebContainer();
-  },[])
+    WebContainerManager.getInstance();
+  },[]);
+
+  // useEffect(() => {
+  //   const bootWebContainer = async () => {
+  //     wcRef.current = await WebContainer.boot();
+  //   };
+  //   bootWebContainer();
+  // },[])
 
   useEffect(() => {
     if (monaco) {
@@ -188,26 +198,9 @@ export default function CodeEditor() {
     try {
       const editorValue = editorRef.current?.getValue() || "";
       setCode(editorValue); // Update code state with the latest editor value
-      const wc = wcRef.current;
-      if(!wc) return;
-      await wc.mount({
-        "index.js": {
-          file: {
-            contents: editorValue,
-          },
-        },
-      });
-
-      const process = await wc.spawn("node", ["./index.js"]);
-      let output = "";
-
-      process.output.pipeTo(new WritableStream({
-        write: (chunk) => {
-          output += chunk;
-          setOutput(output);
-          writeOnTerminal?.write(chunk);
-        },
-      }));
+      const output = await WebContainerManager.runCode(editorValue);
+      writeOnTerminal?.write(output);
+      writeOnTerminal?.write("$ ");
       setOutput(`Executing code...\n${editorValue}\n\nOutput:\n${output}`);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
