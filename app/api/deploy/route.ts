@@ -20,14 +20,13 @@ export async function POST(req: NextRequest) {
         const zipPath = path.join("public/tmp", `${projectName}.zip`);
         console.log("ZIP Path:", zipPath);
 
-        // Check if ZIP exists
         try {
             await fs.access(zipPath);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
             return NextResponse.json({ error: `ZIP file not found: ${zipPath}` }, { status: 404 });
         }
 
-        // Extract ZIP
         console.log("Extracting ZIP file...");
         const extractPath = path.join("/tmp", projectName);
         await fs.mkdir(extractPath, { recursive: true });
@@ -35,7 +34,6 @@ export async function POST(req: NextRequest) {
         const directory = await unzipper.Open.file(zipPath);
         await directory.extract({ path: extractPath });
 
-        // Detect root directory
         let rootPath = path.join(extractPath, projectName);
         const extractedItems = await fs.readdir(extractPath, { withFileTypes: true });
         if (extractedItems.length === 1 && extractedItems[0].isDirectory()) {
@@ -43,7 +41,7 @@ export async function POST(req: NextRequest) {
         }
         console.log("Using extracted path:", rootPath);
 
-        // Collect files recursively, excluding unwanted directories/files
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const collectFiles = async (dir: string, baseDir: string = ""): Promise<any[]> => {
             const entries = await fs.readdir(dir, { withFileTypes: true });
             const files = await Promise.all(
@@ -80,7 +78,6 @@ export async function POST(req: NextRequest) {
 
         console.log("Files to be deployed:", vercelFiles.map((f) => f.file));
 
-        // Upload files to Vercel
         console.log("Uploading files to Vercel...");
         await Promise.all(
             vercelFiles.map(async (file) => {
@@ -98,7 +95,6 @@ export async function POST(req: NextRequest) {
             })
         );
 
-        // Create deployment
         console.log("Creating Vercel deployment...");
         const response = await axios.post(
             "https://api.vercel.com/v13/deployments",
@@ -123,10 +119,10 @@ export async function POST(req: NextRequest) {
 
         console.log("Deployment successful:", response.data);
 
-        // Cleanup extracted files
         await fs.rm(extractPath, { recursive: true, force: true });
 
         return NextResponse.json(response.data);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         console.error("Deployment Error:", error.response?.data || error.message);
         return NextResponse.json(

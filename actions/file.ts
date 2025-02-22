@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { middleware } from "./user";
+// @ts-expect-error FormatOutput function may not have proper typings
 import { formatOutput } from "@/helper/next-stream";
 
 export const updateFiles = async (accessToken: string, codeId: string, files: { name: string; path: string; content?: string }[]) => {
@@ -30,7 +31,7 @@ export const updateFiles = async (accessToken: string, codeId: string, files: { 
           create: {
             name,
             path,
-            content,
+            content: content || '',
             codeId,
           }
         })}

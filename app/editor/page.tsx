@@ -7,7 +7,6 @@ import {
   File,
   Folder,
   Play,
-  X
 } from "lucide-react";
 import { WebContainerManager } from "../utils/webcontainer";
 import { WebContainer } from "@webcontainer/api";
@@ -32,6 +31,7 @@ export default function CodeEditor() {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["root"]));
   const [activeFile, setActiveFile] = useState<string>("index.js");
   const [writeOnTerminal, setWriteOnTerminal] = useState<Terminal>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const monaco = useMonaco();
   const wcRef = useRef<WebContainer>(null);
@@ -63,6 +63,7 @@ export default function CodeEditor() {
     }
   }, [monaco]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
   };
@@ -92,6 +93,7 @@ export default function CodeEditor() {
         },
       }));
       setOutput(`Executing code...\n${editorValue}\n\nOutput:\n${output}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       setOutput(`Error: ${error.message}`);
     }

@@ -36,6 +36,7 @@ export const parseResponse = (llm_response : string) => {
       } else if (currentTag == "CodeParserTitle") {
         onGoingTag = "CodeParserTitle";
       } else if (currentTag === "/CodeParserFile" || currentTag === "/CodeParserResponse" || currentTag === "/CodeParserName" || currentTag === "/CodeParserPath" || currentTag === "/CodeParserContent" || currentTag === "/CodeParserTitle") {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         onGoingTag = "";
         if (currentTag == "/CodeParserFile") {
           response.files.push({

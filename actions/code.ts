@@ -101,7 +101,7 @@ export const getCode = async (accessToken: string, id: string) => {
     });
     if (!code) return { error: 'Code not found', status: 404 };
     if (code.userId !== user.id) return { error: 'Unauthorized', status: 401 };
-    code.files = code.files.map(({ name, path, content }) => ({
+    code.files = code.files.map(({ name, path, content }: { name: string; path: string; content: string }) => ({
       name,
       path: path[path.length - 1] === '/' ? path.slice(0, -1) : path,
       content

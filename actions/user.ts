@@ -1,7 +1,9 @@
 "use server";
 
 import { db } from "@/lib/db";
+// @ts-expect-error FormatOutput function may not have proper typings
 import { compare, hash } from "bcryptjs"
+// @ts-expect-error FormatOutput function may not have proper typings
 import jwt from "jsonwebtoken";
 
 const validateEmail = (email: string) => {
