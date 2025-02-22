@@ -57,7 +57,7 @@ export const TerminalComponent: React.FC<TerminalComponentProps> = ({ setWriteOn
         inputBuffer.current = "";
         if (code) {
           console.log("Executing:", code);
-          const output = await WebContainerManager.runCode(code);
+          const output = await WebContainerManager.runTerminalCommands(code);
           term.writeln("\x1b[37m" + output + "\x1b[0m");
           console.log("Output:", output);
         }

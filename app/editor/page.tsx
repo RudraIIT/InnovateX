@@ -12,6 +12,7 @@ import {
   X
 } from "lucide-react";
 import { WebContainer } from "@webcontainer/api";
+import { WebContainerManager } from "@/utils/webcontainer";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Editor, { useMonaco } from "@monaco-editor/react";
@@ -44,19 +45,19 @@ export default function CodeEditor() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const monaco = useMonaco();
-  const wcRef = useRef<WebContainer>(null);
+  // const wcRef = useRef<WebContainer>(null);
 
   // Configure Monaco editor on mount
-  // useEffect(() => {
-  //   WebContainerManager.getInstance();
-  // },[]);
-
   useEffect(() => {
-    const bootWebContainer = async () => {
-      wcRef.current = await WebContainer.boot();
-    };
-    bootWebContainer();
-  },[])
+    WebContainerManager.getInstance();
+  },[]);
+
+  // useEffect(() => {
+  //   const bootWebContainer = async () => {
+  //     wcRef.current = await WebContainer.boot();
+  //   };
+  //   bootWebContainer();
+  // },[])
 
   useEffect(() => {
     if (monaco) {
@@ -82,26 +83,9 @@ export default function CodeEditor() {
     try {
       const editorValue = editorRef.current?.getValue() || "";
       setCode(editorValue); // Update code state with the latest editor value
-      const wc = wcRef.current;
-      if(!wc) return;
-      await wc.mount({
-        "index.js": {
-          file: {
-            contents: editorValue,
-          },
-        },
-      });
-
-      const process = await wc.spawn("node", ["./index.js"]);
-      let output = "";
-
-      process.output.pipeTo(new WritableStream({
-        write: (chunk) => {
-          output += chunk;
-          setOutput(output);
-          writeOnTerminal?.write(chunk);
-        },
-      }));
+      const output = await WebContainerManager.runCode(editorValue);
+      writeOnTerminal?.write(output);
+      writeOnTerminal?.write("$ ");
       setOutput(`Executing code...\n${editorValue}\n\nOutput:\n${output}`);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
