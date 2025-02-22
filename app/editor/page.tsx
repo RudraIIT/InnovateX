@@ -14,17 +14,23 @@ import {
 import { WebContainer } from "@webcontainer/api";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import Editor, { useMonaco } from "@monaco-editor/react";
+import Editor, { Monaco, useMonaco } from "@monaco-editor/react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Terminal } from "xterm";
 import { TerminalComponent } from "@/components/terminal";
 import { ChatType } from "@prisma/client";
 import { Input } from "@/components/ui/input";
+import axios from "axios";
+import { toast } from "sonner";
+import path from "path";
+import { getFileLanguage } from "@/helpers/Editor/fileLanguage";
+import { setPrismaLanguage } from "@/helpers/Editor/customLanguage";
 
 interface FileNode {
   name: string;
   type: "file" | "folder";
   children?: FileNode[];
+  content?: string;
 }
 
 interface Chat {
@@ -33,18 +39,100 @@ interface Chat {
 }
 
 export default function CodeEditor() {
-  const [code, setCode] = useState('console.log("Hello World")');
+  const [prompt, setPrompt] = useState<string>("");
+  const [title, setTitle] = useState<string>("Untitled");
+  const [code, setCode] = useState<string>("");
   const [output, setOutput] = useState("Hello World");
   const [showFileTree, setShowFileTree] = useState(true);
   const [showConsole, setShowConsole] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["root"]));
-  const [activeFile, setActiveFile] = useState<string>("index.js");
+  const [activeFile, setActiveFile] = useState<string>("");
   const [writeOnTerminal, setWriteOnTerminal] = useState<Terminal>();
   const [chats, setChats] = useState<Chat[]>([]);
+  const [fileSystem, setFileSystem] = useState<FileNode[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const monaco = useMonaco();
   const wcRef = useRef<WebContainer>(null);
+  const convertToFileNode = (files: { name: string; path: string; content: string }[]): FileNode[] => {
+    const fileMap: { [key: string]: FileNode } = {};
+
+    files.forEach((file) => {
+      const parts = file.path.split("/");
+      let currentLevel = fileMap;
+
+      parts.forEach((part, index) => {
+        if (!currentLevel[part]) {
+          currentLevel[part] = {
+            name: part,
+            type: index === parts.length - 1 ? "file" : "folder",
+            children: index === parts.length - 1 ? undefined : [],
+            content: index === parts.length - 1 ? file.content : undefined,
+          };
+        }
+
+        if (index !== parts.length - 1) {
+          currentLevel = currentLevel[part].children as unknown as { [key: string]: FileNode };
+        }
+      });
+    });
+
+    const buildTree = (nodes: { [key: string]: FileNode }): FileNode[] => {
+      return Object.values(nodes).map((node) => {
+        if (node.children) {
+          node.children = buildTree(node.children as unknown as { [key: string]: FileNode });
+        }
+        return node;
+      });
+    };
+
+    return buildTree(fileMap);
+  };
+  const findFileContent = (fileSystem: FileNode[], fileName: string): string | null => {
+    for (const node of fileSystem) {
+      if (node.type === "file" && node.name === fileName) {
+        return node.content || null;
+      } else if (node.type === "folder" && node.children) {
+        const result = findFileContent(node.children, fileName);
+        if (result) return result;
+      }
+    }
+    return null;
+  };
+  const generateCode = async () => {
+    const lastChat = chats[chats.length - 1];
+    if (lastChat.type === ChatType.RESPONSE) return;
+    const prompt = lastChat.message;
+    if (!prompt) return;
+    const toastId = toast.loading("Thinking...");
+    try {
+      const { data : { id } } = await axios.get(`/api/steps?prompt=${prompt}`);
+      toast.loading("Generating code...", { id: toastId });
+      const { data: { response : { title, files, response } } } = await axios.get(`/api/generate?prompt=${prompt}&steps=${id}`);
+      setTitle(title);
+      addChat(response, ChatType.RESPONSE);
+      const fileNodes = convertToFileNode(files);
+      setFileSystem(fileNodes);
+      toast.success("Code generated", { id: toastId });
+    } catch (error) {
+      toast.error("Failed to generate code", { id: toastId });
+    }
+  }
+  const addChat = (message: string, type: ChatType) => {
+    setChats((prev) => [...prev, { message, type }]);
+    setPrompt("");
+  };
+
+  useEffect(() => {
+    generateCode();
+  }, [chats]);
+
+  useEffect(() => {
+    setCode(() => {
+      const content = findFileContent(fileSystem, activeFile);
+      return content || "";
+    })
+  },[activeFile, fileSystem])
 
   // Configure Monaco editor on mount
   // useEffect(() => {
@@ -78,6 +166,24 @@ export default function CodeEditor() {
     editorRef.current = editor;
   };
 
+  const handleEditorWillMount = (monaco: Monaco) => {
+    setPrismaLanguage(monaco);
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+      jsx: monaco.languages.typescript.JsxEmit.React, // Enable React JSX
+      allowJs: true,
+      target: monaco.languages.typescript.ScriptTarget.ES2020,
+      module: monaco.languages.typescript.ModuleKind.ESNext,
+    });
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(`
+      declare namespace JSX {
+        interface IntrinsicElements {
+          [elemName: string]: any;
+        }
+      }
+    `, 'file:///node_modules/@types/react/index.d.ts');
+  };
+
+
   const handleRunCode = async () => {
     try {
       const editorValue = editorRef.current?.getValue() || "";
@@ -108,17 +214,6 @@ export default function CodeEditor() {
       setOutput(`Error: ${error.message}`);
     }
   };
-
-  const fileSystem: FileNode[] = [
-    {
-      name: "src",
-      type: "folder",
-      children: [
-        { name: "index.js", type: "file" },
-        { name: "utils.py", type: "file" },
-      ],
-    },
-  ];
 
   const renderFileTree = (nodes: FileNode[], path = "") => {
     return nodes.map((node) => {
@@ -176,7 +271,10 @@ export default function CodeEditor() {
               defaultSize={100}
               className="border-r border-[#2A2F35] bg-[#1B1F23]"
             >
-              <ScrollArea className="h-full p-4">{renderFileTree(fileSystem)}</ScrollArea>
+              {!fileSystem.length && <div className="flex items-center justify-center h-full text-gray-400">
+                No files found
+                </div>}
+              {fileSystem.length && <ScrollArea className="h-full p-4">{renderFileTree(fileSystem)}</ScrollArea>}
             </ResizablePanel>
             <ResizableHandle/>
           </>
@@ -192,7 +290,24 @@ export default function CodeEditor() {
                   <span className="text-sm">{activeFile}</span>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <Editor height="100%" width="100%" defaultLanguage="javascript" defaultValue={code} onMount={handleEditorDidMount} />
+                  {!activeFile && <div className="flex items-center justify-center h-full text-gray-400">Select a file to view</div>}
+                  {activeFile && <Editor
+                    height="100%"
+                    width="100%"
+                    language={getFileLanguage(activeFile)}
+                    value={code}
+                    onMount={handleEditorDidMount}
+                    beforeMount={handleEditorWillMount}
+                    theme="vs-dark"
+                    options={{
+                      wordWrap: "on",
+                      formatOnType: true,
+                      formatOnPaste: true,
+                      minimap: { enabled: true },
+                      automaticLayout: true,
+                      scrollBeyondLastLine: false
+                    }}
+                  />}
                 </div>
               </div>
             </ResizablePanel>
@@ -247,9 +362,16 @@ export default function CodeEditor() {
                   <div className="flex items-center w-full">
                     <Input
                       placeholder="Describe here..."
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
                       className="flex-1 min-w-10"
                     />
-                    <Button variant="default" size="sm" className="ml-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="ml-2"
+                      onClick={() => addChat(prompt, ChatType.PROMPT)}
+                    >
                       Send
                     </Button>
                   </div>

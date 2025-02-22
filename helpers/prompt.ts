@@ -1,3 +1,12 @@
+export const DATABASE_CONNECTION_PROMPT = `
+Ensure to generate a file that manages the connection to the database, named 'db.ts', with the following requirements:
+
+- The file should be located in the 'src/utils/' directory.
+- It should export a function to connect to the database.
+- Use appropriate database connection library Prisma.
+- Ensure proper error handling and connection pooling if necessary.
+`;
+
 export const formatPrompt = (prompt: string) => {
   return `
   All the files which are required to build this application should be mentioned in the specific format.
@@ -102,6 +111,8 @@ Ensure these files exist to prevent compilation errors:
 
 export const STEP_GENERATION_PROMPT = (prompt: string) => `
 ${GENERAL_PROMPT}
+
+${DATABASE_CONNECTION_PROMPT}
 
 Now, to build the website described below:
 

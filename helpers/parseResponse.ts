@@ -50,7 +50,7 @@ export const parseResponse = (llm_response : string) => {
             response : onGoingData.trimStart().trimStart(),
             end: true
           }
-          response.response = data.response;
+          response.response = data.response.split(`xml`)[1].trimStart().trimStart();
         } else if (currentTag == "/CodeParserName") {
           onGoingData = onGoingData.replace("```xml", "");
           name = onGoingData.trimStart().trimStart();
@@ -70,7 +70,7 @@ export const parseResponse = (llm_response : string) => {
           content = data.content;
         } else if (currentTag == "/CodeParserTitle") {
           const data = {
-            title : onGoingData.split('```')[2].split('\n')[1] || onGoingData.split('```')[2].split('\n')[0] ||onGoingData.split('\n')[1] || onGoingData.split('\n')[0] || onGoingData.split('```')[1] || onGoingData.split('```')[0] || onGoingData,
+            title : onGoingData?.split('```')[2]?.split('\n')[1] || onGoingData?.split('```')[2]?.split('\n')[0] ||onGoingData?.split('\n')[1] || onGoingData?.split('\n')[0] || onGoingData?.split('```')[1] || onGoingData?.split('```')[0] || onGoingData,
           };
           response.title = data.title;
         }
