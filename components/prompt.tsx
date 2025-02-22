@@ -19,6 +19,7 @@ import { UserButton } from "@clerk/nextjs"
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { FileUploader } from "./file-upload"
 import { Navbar } from "./navbar"
+import { Templates } from "./templates"
 
 export async function Prompt() {
   const user = await currentUser();
@@ -100,6 +101,15 @@ export async function Prompt() {
                 <FileUploader />
                 <Button className="w-full">Generate</Button>
               </div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold tracking-tight md:text-6xl leading-7 bg-gradient-to-l from-indigo-400 from-10% via-sky-400 via-30% to-emerald-300 to-90% bg-clip-text text-transparent pt-8">
+                Templates
+              </div>
+              <div  className="text-lg font-medium text-gray-500 mb-8 mt-4">
+                Use our templates to get started quickly
+              </div>
+              <Templates />
             </div>
           </div>
         </main>
