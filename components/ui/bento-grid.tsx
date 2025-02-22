@@ -1,4 +1,6 @@
+'use client';
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 export const BentoGrid = ({
   className,
@@ -25,19 +27,24 @@ export const BentoGridItem = ({
   description,
   header,
   icon,
+  template
 }: {
   className?: string;
   title?: string | React.ReactNode;
   description?: string | React.ReactNode;
   header?: React.ReactNode;
   icon?: React.ReactNode;
+  template?: string;
 }) => {
+  const router = useRouter();
+
   return (
     <div
       className={cn(
         "row-span-1 rounded-xl group/bento hover:shadow-xl transition duration-200 shadow-input dark:shadow-none p-4 dark:bg-black dark:border-white/[0.2] bg-white border border-transparent justify-between flex flex-col space-y-4",
         className
       )}
+      onClick={() => router.push(`editor?template=${template}`)}
     >
       {header}
       <div className="group-hover/bento:translate-x-2 transition duration-200">

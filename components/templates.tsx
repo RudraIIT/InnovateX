@@ -20,6 +20,7 @@ export function Templates() {
           description={item.description}
           header={item.header}
           icon={item.icon}
+          template={item.template}
         />
       ))}
     </BentoGrid>
@@ -40,6 +41,7 @@ const items = [
         />
       ),
       icon: <IconClipboardCopy className="h-4 w-4 text-neutral-500" />,
+      template: "block-shield",
     },
     {
       title: "Crypto Dashboard",
@@ -54,6 +56,7 @@ const items = [
         />
       ),
       icon: <IconFileBroken className="h-4 w-4 text-neutral-500" />,
+      template: "crypto-dashboard",
     },
     {
       title: "Urban Style",
@@ -68,6 +71,7 @@ const items = [
         />
       ),
       icon: <IconSignature className="h-4 w-4 text-neutral-500" />,
+      template: "urban-style",
     },
     {
       title: "Widget",
@@ -82,6 +86,7 @@ const items = [
         />
       ),
       icon: <IconTableColumn className="h-4 w-4 text-neutral-500" />,
+      template: "widget",
     },
     {
       title: "Portfolio",
@@ -96,5 +101,6 @@ const items = [
         />
       ),
       icon: <IconArrowWaveRightUp className="h-4 w-4 text-neutral-500" />,
+      template: "portfolio",
     },
   ];
