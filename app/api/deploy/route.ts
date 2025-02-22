@@ -12,20 +12,25 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Vercel API Key is missing" }, { status: 500 });
         }
 
-        const { projectName } = await req.json();
-        if (!projectName) {
-            return NextResponse.json({ error: "Missing projectName" }, { status: 400 });
+        // Get form data including the zip file
+        const formData = await req.formData();
+        const zipFile = formData.get("zip") as File;
+        const projectName = formData.get("projectName") as string;
+
+        if (!zipFile || !projectName) {
+            return NextResponse.json({ 
+                error: "Missing zip file or projectName" 
+            }, { status: 400 });
         }
 
-        const zipPath = path.join("public/tmp", `${projectName}.zip`);
-        console.log("ZIP Path:", zipPath);
+        // Create temporary directory
+        const tmpDir = path.join("public/tmp");
+        await fs.mkdir(tmpDir, { recursive: true });
 
-        try {
-            await fs.access(zipPath);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (err) {
-            return NextResponse.json({ error: `ZIP file not found: ${zipPath}` }, { status: 404 });
-        }
+        // Save uploaded zip file
+        const zipPath = path.join(tmpDir, `${projectName}.zip`);
+        const buffer = Buffer.from(await zipFile.arrayBuffer());
+        await fs.writeFile(zipPath, buffer);
 
         console.log("Extracting ZIP file...");
         const extractPath = path.join("/tmp", projectName);
@@ -41,7 +46,6 @@ export async function POST(req: NextRequest) {
         }
         console.log("Using extracted path:", rootPath);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const collectFiles = async (dir: string, baseDir: string = ""): Promise<any[]> => {
             const entries = await fs.readdir(dir, { withFileTypes: true });
             const files = await Promise.all(
@@ -49,7 +53,6 @@ export async function POST(req: NextRequest) {
                     const fullPath = path.join(dir, entry.name);
                     const relativePath = path.join(baseDir, entry.name);
 
-                    // Skip .git and other unwanted directories/files
                     if (entry.name === ".git" || entry.name.startsWith(".")) {
                         return null;
                     }
@@ -60,7 +63,7 @@ export async function POST(req: NextRequest) {
                         const content = await fs.readFile(fullPath);
                         const sha = createHash("sha1").update(content).digest("hex");
                         return {
-                            file: relativePath.replace(/\\/g, "/"), // Normalize to forward slashes
+                            file: relativePath.replace(/\\/g, "/"),
                             data: content,
                             sha,
                             size: content.length,
@@ -75,8 +78,6 @@ export async function POST(req: NextRequest) {
         if (vercelFiles.length === 0) {
             return NextResponse.json({ error: "No valid files found for deployment" }, { status: 400 });
         }
-
-        console.log("Files to be deployed:", vercelFiles.map((f) => f.file));
 
         console.log("Uploading files to Vercel...");
         await Promise.all(
@@ -117,12 +118,11 @@ export async function POST(req: NextRequest) {
             }
         );
 
-        console.log("Deployment successful:", response.data);
-
+        // Cleanup
+        await fs.rm(tmpDir, { recursive: true, force: true });
         await fs.rm(extractPath, { recursive: true, force: true });
 
         return NextResponse.json(response.data);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         console.error("Deployment Error:", error.response?.data || error.message);
         return NextResponse.json(
@@ -134,8 +134,6 @@ export async function POST(req: NextRequest) {
 
 export const config = {
     api: {
-        bodyParser: {
-            sizeLimit: "10mb",
-        },
+        bodyParser: false, // Disable default body parser to handle form data
     },
 };
