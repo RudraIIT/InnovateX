@@ -7,15 +7,15 @@ import {
   File,
   Folder,
   Play,
-  X,
-  Plus,
-  MoreVertical,
+  X
 } from "lucide-react";
 import { WebContainerManager } from "../utils/webcontainer";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Resizable } from "re-resizable";
 import Editor, { useMonaco } from "@monaco-editor/react";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { Terminal } from "xterm";
+import { TerminalComponent } from "@/components/terminal";
 
 interface FileNode {
   name: string;
@@ -30,6 +30,7 @@ export default function CodeEditor() {
   const [showConsole, setShowConsole] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["root"]));
   const [activeFile, setActiveFile] = useState<string>("index.js");
+  const [writeOnTerminal, setWriteOnTerminal] = useState<Terminal>();
   const editorRef = useRef<any>(null);
   const monaco = useMonaco();
 
@@ -115,7 +116,6 @@ export default function CodeEditor() {
 
   return (
     <div className="h-screen w-full flex flex-col bg-[#1E2227] text-white">
-      {/* Top Navigation */}
       <header className="h-12 flex items-center justify-between px-4 border-b border-[#2A2F35] bg-[#1B1F23]">
         <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" onClick={() => setShowFileTree(!showFileTree)}>
           <Folder className="h-4 w-4 mr-2" />
@@ -126,44 +126,70 @@ export default function CodeEditor() {
           Run
         </Button>
       </header>
-
-      <div className="flex flex-grow">
-        {/* Sidebar */}
+      <ResizablePanelGroup
+        direction="horizontal"
+        className="flex flex-grow"
+      >
         {showFileTree && (
-          <Resizable defaultSize={{ width: 240, height: "100%" }} minWidth={200} maxWidth={400} enable={{ right: true }} className="border-r border-[#2A2F35] bg-[#1B1F23]">
-            <ScrollArea className="h-full p-4">{renderFileTree(fileSystem)}</ScrollArea>
-          </Resizable>
+          <>
+            <ResizablePanel
+              defaultSize={200}
+              className="border-r border-[#2A2F35] bg-[#1B1F23]"
+            >
+              <ScrollArea className="h-full p-4">{renderFileTree(fileSystem)}</ScrollArea>
+            </ResizablePanel>
+            <ResizableHandle/>
+          </>
         )}
-
-        {/* Main Editor */}
-        <div className="flex-1 flex flex-col">
-          <div className="border-b border-[#2A2F35] px-4 py-2 bg-[#1E2227]">
-            <span className="text-sm">{activeFile}</span>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <Editor height="100%" width="100%" defaultLanguage="javascript" defaultValue={code} onMount={handleEditorDidMount} />
-          </div>
-        </div>
-
-        {/* Output Console */}
-        {showConsole && (
-          <Resizable defaultSize={{ width: 320, height: "100%" }} minWidth={200} maxWidth={800} enable={{ left: true }} className="border-l border-[#2A2F35] bg-[#1B1F23]">
-            <div className="h-full flex flex-col">
-              <div className="border-b border-[#2A2F35] p-2 flex justify-between">
-                <span className="text-sm">Console</span>
-                <Button variant="ghost" size="icon" onClick={() => setShowConsole(false)}>
-                  <X className="h-4 w-4" />
-                </Button>
+        <ResizablePanel defaultSize={400} className="border-b border-[#2A2F35] h-full">
+          <ResizablePanelGroup direction="vertical" className="flex flex-col h-full">
+            <ResizablePanel
+              defaultSize={100}
+              className="border-b border-[#2A2F35] bg-[#1B1F23] flex-grow"
+            >
+              <div className="flex flex-col h-full">
+                <div className="border-b border-[#2A2F35] px-4 py-2 bg-[#1E2227]">
+                  <span className="text-sm">{activeFile}</span>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <Editor height="100%" width="100%" defaultLanguage="javascript" defaultValue={code} onMount={handleEditorDidMount} />
+                </div>
               </div>
-              <ScrollArea className="flex-1 p-4">
-                <pre className="font-mono text-sm text-[#2ea043] whitespace-pre-wrap">{output}</pre>
-              </ScrollArea>
-            </div>
-          </Resizable>
+            </ResizablePanel>
+            <ResizableHandle/>
+            <ResizablePanel
+              defaultSize={50}
+              minSize={30}
+              maxSize={70}
+              className="border-b border-[#2A2F35] bg-[#1B1F23] relative"
+            >
+              <TerminalComponent setWriteOnTerminal={setWriteOnTerminal} />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
+        {showConsole && (
+          <>
+            <ResizableHandle/>
+            <ResizablePanel
+              defaultSize={280}
+              className="border-l border-[#2A2F35] bg-[#1B1F23]"
+              onResize={(size) => {if (size < 2) setShowConsole(false)}}
+            >
+              <div className="h-full flex flex-col">
+                <div className="border-b border-[#2A2F35] p-2 flex justify-between">
+                  <span className="text-sm">Console</span>
+                  <Button variant="ghost" size="icon" onClick={() => setShowConsole(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <ScrollArea className="flex-1 p-4">
+                  <pre className="font-mono text-sm text-[#2ea043] whitespace-pre-wrap">{output}</pre>
+                </ScrollArea>
+              </div>
+            </ResizablePanel>
+          </>
         )}
-      </div>
-
-      {/* Status Bar */}
+      </ResizablePanelGroup>
       <footer className="h-6 border-t border-[#2A2F35] px-4 text-xs text-gray-400 bg-[#1B1F23] flex items-center">
         <span>JavaScript</span>
         {!showConsole && (
