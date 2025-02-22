@@ -34,7 +34,9 @@ export const generateCode = async (prompt: string, toastId: string | number) => 
     "Improve **hover effects and active states** with subtle color transitions.",
     "Make **buttons and links** more visually appealing with **gradients and shadows**.",
     "Ensure proper **light/dark mode compatibility** with smooth transitions.",
-    "Add **colorful illustrations** and **icons** to enhance the overall design."
+    "Add **colorful illustrations** and **icons** to enhance the overall design.",
+    "Make sure all components made are used",
+    "Make sure there no such class used which not defined by tailwindcss or in globals.css"
   ];
 
   for (const step of steps) {

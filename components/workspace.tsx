@@ -200,6 +200,11 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
         const { data: { response : { title, files, response } } } = await axios.get(`/api/modify/${id}?prompt=${prompt}`);
         if (title) setTitle(title);
         addChat(response, ChatType.RESPONSE);
+        const packageJsonFile: { name: string; path: string; content: string } | undefined = files.find((file: { name: string; path: string; content: string }) => file.name === "package.json");
+        if (packageJsonFile) {
+          setPreviewUrl("");
+          startDevServer();
+        }
         const newFileSystem = updateFileSystem(fileSystem, files);
         setFileSystem(newFileSystem);
         toast.success("Code Modified", { id: toastId });
