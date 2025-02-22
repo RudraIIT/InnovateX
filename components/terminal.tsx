@@ -22,7 +22,7 @@ interface TerminalComponentProps {
   setWriteOnTerminal: Dispatch<SetStateAction<Terminal | undefined>>;
 }
 
-export const TerminalComponent : React.FC<TerminalComponentProps> = ({ setWriteOnTerminal }) => {
+export const TerminalComponent: React.FC<TerminalComponentProps> = ({ setWriteOnTerminal }) => {
   const terminalRef = useRef<HTMLDivElement | null>(null);
   const termInstance = useRef<Terminal | null>(null);
   useEffect(() => {
