@@ -183,9 +183,6 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
     const bootWebContainer = async () => {
       wcRef.current = await WebContainer.boot();
       console.log("WebContainer initialized");
-      if (tabValue === "preview") {
-        startDevServer();
-      }
     };
     bootWebContainer();
     if (id) {
@@ -247,11 +244,22 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
     `, 'file:///node_modules/@types/react/index.d.ts');
   };
 
+  // useEffect(() => {
+  //   if (tabValue === "preview") {
+  //     console.log("Starting Dev Server");
+  //     startDevServer();
+  //   }
+  // }, [tabValue, wcRef.current]);
+
   useEffect(() => {
-    if (tabValue === "preview") {
+    if (wcRef.current && tabValue === "preview" && !previewUrl) {
       startDevServer();
     }
-  }, [tabValue, wcRef.current])
+  }, [wcRef.current, tabValue, previewUrl]);
+
+  useEffect(() => {
+    console.log("webContainer", wcRef.current);
+  }, [wcRef.current])
 
   const startDevServer = async () => {
     if (startingDevServer || previewUrl) return;
