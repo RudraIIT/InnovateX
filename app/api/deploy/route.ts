@@ -4,6 +4,7 @@ import path from "path";
 import axios from "axios";
 import unzipper from "unzipper";
 import { createHash } from "crypto";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export async function POST(req: NextRequest) {
     try {

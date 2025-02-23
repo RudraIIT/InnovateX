@@ -1,5 +1,8 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from "react";
 import {
   ChevronDown,
@@ -37,7 +40,6 @@ import { UserButton, useUser } from "@clerk/nextjs";
 import { TerminalDrawer } from "./terminal-drawer";
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -63,7 +65,6 @@ interface WorkspaceProps {
 }
 
 export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
-  const navigate = useRouter();
   const [id, setId] = useState<string | undefined>(initialId);
   const [prompt, setPrompt] = useState<string>("");
   const [title, setTitle] = useState<string>("Untitled");

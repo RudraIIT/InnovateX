@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/drawer"
 import { Terminal } from "lucide-react"
 import { TerminalComponent } from "./terminal"
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export function TerminalDrawer({setWriteOnTerminal}: any) {
 
