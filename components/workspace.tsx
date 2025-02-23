@@ -51,6 +51,7 @@ import { fetchProjectTree } from "@/utils/zip";
 import { generateSlug } from 'random-word-slugs';
 import Link from "next/link";
 import { Loader } from "./loading-screen";
+import { Textarea } from "./ui/textarea";
 
 interface FileNode {
   name: string;
@@ -814,17 +815,17 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center w-full">
-                    <Input
-                      placeholder="Your prompt here..."
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      className="flex-1 min-w-10"
-                    />
+                  <div className="flex flex-col items-center w-full gap-2">
+                  <Textarea
+                    className="h-28 rounded-lg px-4 py-4 text-sm text-left align-top leading-normal placeholder:text-left"
+                    placeholder="Your prompt here..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                  />
                     <Button
                       variant="default"
                       size="sm"
-                      className="ml-2"
+                      className="w-full"
                       onClick={() => addChat(prompt, ChatType.PROMPT)}
                     >
                       Send
