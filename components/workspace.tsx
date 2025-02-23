@@ -32,7 +32,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { baseConfig } from "@/helpers/baseConfig";
 import { useRouter } from "next/navigation";
 import { getCode } from "@/actions/code";
-import { generateCode as chainCodeGeneration } from "@/helpers/promptChain";
+import { generateCode as masterAgent } from "@/agents/master";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { TerminalDrawer } from "./terminal-drawer";
 import {
@@ -202,7 +202,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
         const { data : { id } } = await axios.get(`/api/steps?prompt=${prompt}`);
         toast.loading("Generating code...", { id: toastId });
         // const { data: { response : { title, files, response }, id : codeId} } = await axios.get(`/api/generate?prompt=${prompt}&steps=${id}`);
-        const { response : { title, files, response }, id : codeId } = await chainCodeGeneration(prompt, toastId);
+        const { response : { title, files, response }, id : codeId } = await masterAgent(prompt, toastId);
         setTitle(title);
         addChat(response, ChatType.RESPONSE);
         const fileNodes = convertToFileNode(files);

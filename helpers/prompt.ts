@@ -155,7 +155,13 @@ Follow these steps to generate the required code:
 - public/ (if needed)
 - src/
   - app/
-    - api/ (ALL API routes must be inside this)
+    - api
+      /** example */
+      - users
+        - route.js
+        - [id]
+          - route.js
+      /** example */
     - globals.css
     - layout.jsx
     - page.jsx
