@@ -70,7 +70,6 @@ interface WorkspaceProps {
 }
 
 export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) => {
-  const navigate = useRouter();
   const [id, setId] = useState<string | undefined>(initialId);
   const [prompt, setPrompt] = useState<string>("");
   const [title, setTitle] = useState<string>("Untitled");
@@ -78,7 +77,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
   const [showFileTree, setShowFileTree] = useState(true);
   const [showConsole, setShowConsole] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["root"]));
-  const [activeFile, setActiveFile] = useState<string>("");
+  const [activeFilePath, setActiveFilePath] = useState<string>("");
   const [writeOnTerminal, setWriteOnTerminal] = useState<Terminal>();
   const [chats, setChats] = useState<Chat[]>(template ? [{ message: "Template Initialized", type: ChatType.PROMPT }, { message: "Give me prompt to modify code", type: ChatType.RESPONSE }] : []);
   const [fileSystem, setFileSystem] = useState<FileNode[]>([]);
@@ -159,13 +158,17 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
 
     return result;
   };
-  const findFileContent = (fileSystem: FileNode[], fileName: string): string | null => {
+  const findFileContent = (fileSystem: FileNode[], path: string): string | null => {
+    if (path[0] === "/") path = path.slice(1);
+    const parts = path.split("/");
     for (const node of fileSystem) {
-      if (node.type === "file" && node.name === fileName) {
-        return node.content || null;
-      } else if (node.type === "folder" && node.children) {
-        const result = findFileContent(node.children, fileName);
-        if (result) return result;
+      if (node.name === parts[0]) {
+        if (parts.length === 1) {
+          return node.content ?? null;
+        }
+        if (node.type === "folder" && node.children) {
+          return findFileContent(node.children, parts.slice(1).join("/"));
+        }
       }
     }
     return null;
@@ -252,13 +255,17 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
     }
     return true;
   }
-  const findPathUsingName = (fileSystem: FileNode[], fileName: string): string | null => {
+  const findNameUsingPath = (fileSystem: FileNode[], path: string): string | null => {
+    if (path[0] === "/") path = path.slice(1);
+    const parts = path.split("/");
     for (const node of fileSystem) {
-      if (node.name === fileName) {
-        return node.name;
-      } else if (node.type === "folder" && node.children) {
-        const result = findPathUsingName(node.children, fileName);
-        if (result) return `${node.name}/${result}`;
+      if (node.name === parts[0]) {
+        if (parts.length === 1) {
+          return node.name;
+        }
+        if (node.type === "folder" && node.children) {
+          return findNameUsingPath(node.children, parts.slice(1).join("/"));
+        }
       }
     }
     return null;
@@ -267,9 +274,11 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
     if (value === undefined) return;
     setCode(value);
     if (orgFileSystem.length === 0) setOrgFileSystem(fileSystem);
-    const updatedFilePath = findPathUsingName(fileSystem, activeFile);
+    const updatedFilePath = activeFilePath;
     if (!updatedFilePath) return;
-    const newFileSystem = updateFileSystem(fileSystem, [{ name: activeFile, path: updatedFilePath, content: value }]);
+    const fileName = findNameUsingPath(fileSystem, updatedFilePath);
+    if (!fileName) return;
+    const newFileSystem = updateFileSystem(fileSystem, [{ name: fileName, path: updatedFilePath, content: value }]);
     if (!compareFileSystem(fileSystem, newFileSystem)) {
       setFileSystem(newFileSystem);
     } else {
@@ -301,10 +310,10 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
 
   useEffect(() => {
     setCode(() => {
-      const content = findFileContent(fileSystem, activeFile);
+      const content = findFileContent(fileSystem, activeFilePath);
       return content || "";
     })
-  },[activeFile, fileSystem])
+  },[activeFilePath, fileSystem])
 
   useEffect(() => {
     (async () => {
@@ -515,10 +524,10 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
         <div
           key={currentPath}
           className={`flex items-center cursor-pointer py-1 px-2 rounded ml-6 ${
-            activeFile === node.name ? "bg-[#2A2F35] text-white" : "hover:bg-[#2A2F35]"
+            activeFilePath === currentPath ? "bg-[#2A2F35] text-white" : "hover:bg-[#2A2F35]"
           }`}
           onClick={() => {
-            setActiveFile(node.name)
+            setActiveFilePath(currentPath)
             setTabValue("editor")
           }}
         >
@@ -644,14 +653,14 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
                 <TabsContent value="editor" className="h-full">
                   <div className="flex flex-col h-full">
                     <div className="border-b border-[#2A2F35] px-4 py-2">
-                      <span className="text-sm">{activeFile}</span>
+                      <span className="text-sm">{activeFilePath ? activeFilePath.split("/")?.pop() || '' : ''}</span>
                     </div>
                     <div className="flex-1 overflow-hidden">
-                      {!activeFile && <div className="flex items-center justify-center h-full text-gray-400">Select a file to view</div>}
-                      {activeFile && <Editor
+                      {!activeFilePath && <div className="flex items-center justify-center h-full text-gray-400">Select a file to view</div>}
+                      {activeFilePath && <Editor
                         height="100%"
                         width="100%"
-                        language={getFileLanguage(activeFile)}
+                        language={getFileLanguage(activeFilePath?.split("/")?.pop() || '')}
                         value={code}
                         onChange={(value) => handleCodeChange(value || "")}
                         onMount={handleEditorDidMount}
@@ -858,8 +867,9 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
         </SheetContent>
       </Sheet>
       </div>
-      <footer className="h-6 border-t border-[#2A2F35] px-4 text-xs text-gray-400 bg-[#1B1F23] flex items-center">
-        <span>{activeFile ? getFileLanguage(activeFile) : "No File"}</span>
+      <footer className="h-6 border-t border-[#2A2F35] px-4 text-xs text-gray-400 bg-[#1B1F23] flex items-center justify-center relative">
+        <span className="absolute left-4">{activeFilePath ? getFileLanguage(activeFilePath.split("/")?.pop() || '') : "No File"}</span>
+        {title && title != 'Untitled' && <span>{title}</span>}
       </footer>
     </div>
   );
