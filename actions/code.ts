@@ -13,6 +13,9 @@ export const createCode = async (
   prompt?: string,
 ) => {
   try {
+    console.log('Debug - Received response:', response);
+    console.log('Debug - Received prompt:', prompt);
+
     if (!response || typeof response !== 'object') {
       return { error: 'Response object is required', status: 400 };
     }
@@ -21,8 +24,32 @@ export const createCode = async (
       return { error: 'Files array is required', status: 400 };
     }
 
-    if (!prompt) {
-      return { error: 'Prompt is required', status: 400 };
+    if (response.files.length === 0) {
+      return { error: 'Files array cannot be empty', status: 400 };
+    }
+
+    // Validate each file in the array
+    for (const file of response.files) {
+      if (!file || typeof file !== 'object') {
+        return { error: 'Each file must be an object', status: 400 };
+      }
+      if (typeof file.name !== 'string' || !file.name) {
+        return { error: 'Each file must have a valid name', status: 400 };
+      }
+      if (typeof file.path !== 'string' || !file.path) {
+        return { error: 'Each file must have a valid path', status: 400 };
+      }
+      if (typeof file.content !== 'string') {
+        return { error: 'Each file must have content as string', status: 400 };
+      }
+    }
+
+    if (!prompt || typeof prompt !== 'string') {
+      return { error: 'Prompt must be a non-empty string', status: 400 };
+    }
+
+    if (typeof response.response !== 'string' || !response.response) {
+      return { error: 'Response message must be a non-empty string', status: 400 };
     }
 
     const session = await currentUser();
