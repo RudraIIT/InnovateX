@@ -229,43 +229,6 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
     }
   }
 
-  const generateInitCode = async () => {
-    const {data : { prompt }} = await axios.get(`/api/prompt?userId=${user?.id}`);
-    console.log("Prompt from dashboard:", prompt);
-    if (!prompt) return;
-    const toastId = toast.loading("Thinking...");
-    try {
-      if (chats.length == 1) {
-        const { data : { id } } = await axios.get(`/api/steps?prompt=${prompt}`);
-        toast.loading("Generating code...", { id: toastId });
-        // const { data: { response : { title, files, response }, id : codeId} } = await axios.get(`/api/generate?prompt=${prompt}&steps=${id}`);
-        const { response : { title, files, response }, id : codeId } = await chainCodeGeneration(prompt, toastId);
-        setTitle(title);
-        addChat(response, ChatType.RESPONSE);
-        const fileNodes = convertToFileNode(files);
-        setFileSystem(fileNodes);
-        toast.success("Code Generated", { id: toastId });
-        setId(codeId);
-      } else {
-        toast.loading("Modifying code...", { id: toastId });
-        const { data: { response : { title, files, response } } } = await axios.post(`/api/modify/${id}?prompt=${prompt}`);
-        if (title) setTitle(title);
-        addChat(response, ChatType.RESPONSE);
-        const packageJsonFile: { name: string; path: string; content: string } | undefined = files.find((file: { name: string; path: string; content: string }) => file.name === "package.json");
-        if (packageJsonFile) {
-          setPreviewUrl("");
-          startDevServer();
-        }
-        const newFileSystem = updateFileSystem(fileSystem, files);
-        setFileSystem(newFileSystem);
-        toast.success("Code Modified", { id: toastId });
-      }
-      setTabValue("preview");
-    } catch (error) {
-      toast.error("Failed to generate code", { id: toastId });
-    }
-  }
-
   const addChat = (message: string, type: ChatType) => {
     setChats((prev) => [...prev, { message, type }]);
     setPrompt("");
@@ -305,6 +268,15 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   }
 
   useEffect(() => {
+    const getInitPrompt = async () => {
+      const {data : { prompt }} = await axios.get(`/api/prompt?userId=${user?.id}`);
+      if (!prompt) return;
+      addChat(prompt, ChatType.PROMPT);
+    }
+    getInitPrompt();
+  }, [])
+
+  useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTo({
         top: chatRef.current.scrollHeight,
@@ -316,11 +288,6 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   useEffect(() => {
     generateCode();
   }, [chats]);
-
-  useEffect(() => {
-    generateInitCode();
-  }
-  , []);
 
   useEffect(() => {
     setCode(() => {
@@ -568,7 +535,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
                 if (tabValue === "editor") setTabValue("preview");
                 else setTabValue("editor");
               }}
-              disabled={tabValue === "editor" && !wcInitialized || showFileTree}
+              disabled={!wcInitialized}
             >
               {tabValue === "editor" && (
                 <>
@@ -722,7 +689,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
               className="border-l border-[#2A2F35] hidden md:block"
               onResize={(size) => {if (size < 5) setShowConsole(false)}}
             >
-              <div className="h-full flex flex-col hidden md:block">
+              <div className="h-full flex-col hidden md:flex">
                 <div className="border-b border-[#2A2F35] p-2 flex items-center justify-between">
                   <span className="text-2xl font-semibold bg-gradient-to-l from-indigo-400 from-10% via-sky-400 via-30% to-emerald-300 to-90% bg-clip-text text-transparent flex-1 text-center">
                     Chat
