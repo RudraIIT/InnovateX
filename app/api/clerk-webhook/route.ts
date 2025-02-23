@@ -1,48 +1,76 @@
-import { NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
-import { PrismaClient } from '@prisma/client'
+import { NextResponse } from 'next/server';
+import { Webhook } from 'svix';
+import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
-export async function POST() {
-  const user = await currentUser();
-  const { userId } = await auth()
-
-  if (!userId) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    )
+export async function POST(req: Request) {
+  const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
+  
+  if (!WEBHOOK_SECRET) {
+    throw new Error('WEBHOOK_SECRET is not configured in environment variables');
   }
 
-  const email = user?.emailAddresses[0].emailAddress;
+  const headers = Object.fromEntries(req.headers);
+  const payload = await req.text();
 
-  if (!email) {
-    return NextResponse.json(
-      { error: 'Email not found' },
-      { status: 404 }
-    )
-  }
+  const wh = new Webhook(WEBHOOK_SECRET);
 
   try {
-    const userDetail = await prisma.user.upsert({
-      where: { email },
-        update: {},
-        create: {
-          id: userId,
-          email: email,
+    const evt = wh.verify(payload, headers) as {
+      type: string;
+      data: {
+        id: string;
+        email_addresses: { email_address: string }[];
+        username?: string;
+        first_name?: string;
+        last_name?: string;
+        last_active_at?: string;
+      };
+    };
+
+    const { id } = evt.data;
+    const eventType = evt.type;
+
+    console.log('Webhook received:', {
+      eventType,
+      data: evt.data,
+    });
+
+    if (eventType === 'user.created') {
+      const { email_addresses, username, first_name, last_name } = evt.data;
+      const email = email_addresses[0].email_address;
+      const fullName = `${first_name || ''} ${last_name || ''}`.trim() || username;
+
+      const user = await prisma.user.create({
+        data: {
+          id,
+          email,
+          name: fullName || null,
+          createdAt: new Date(),
         },
-    })
+      });
+
+      console.log('User created in database:', user);
+    }
 
     return NextResponse.json({
-      id: userDetail.id,
-      email: userDetail.email,
-    })
+      success: true,
+      message: 'Webhook processed successfully',
+    }, { status: 200 });
+
   } catch (error) {
-    console.error('Error fetching user details:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Webhook processing failed:', error);
+    
+    return NextResponse.json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Webhook verification failed',
+    }, { status: 400 });
   }
 }
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
