@@ -57,50 +57,59 @@ export const createCode = async (
     const email = session.emailAddresses[0].emailAddress;
     const user = await db.user.findUnique({
       where: { email },
-      select: {
-        id: true,
-      }
+      select: { id: true },
     });
     if (!user) return { error: 'User not found', status: 404 };
+
+    // Sanitize all string inputs to remove null bytes
+    const sanitize = (str: string | undefined) => str?.replace(/\0/g, '') || '';
+    const sanitizedTitle = sanitize(response.title) || 'Untitled';
+    const sanitizedPrompt = sanitize(prompt);
+    const sanitizedResponse = sanitize(response.response);
+    const sanitizedFiles = response.files.map(file => ({
+      name: sanitize(file.name),
+      path: sanitize(file.path),
+      content: sanitize(file.content),
+    }));
+
     const code = await db.code.create({
       data: {
-        title: response.title || 'Untitled',
+        title: sanitizedTitle,
         chat: {
           create: [
             {
-              message: prompt,
-              type: 'PROMPT'
+              message: sanitizedPrompt,
+              type: 'PROMPT',
             },
             {
-              message: response.response,
-              type: 'RESPONSE'
-            }
-          ]
+              message: sanitizedResponse,
+              type: 'RESPONSE',
+            },
+          ],
         },
         files: {
-          create: response.files.map(({ name, path, content }) => ({
+          create: sanitizedFiles.map(({ name, path, content }) => ({
             name,
             path,
             content,
-          }))
+          })),
         },
         user: {
           connect: {
             id: user.id,
-          }
-        }
+          },
+        },
       },
       select: {
         id: true,
-      }
+      },
     });
     return { data: { id: code.id }, status: 201 };
   } catch (error) {
-    // console.log("error in create code", error);
     const message = error instanceof Error ? error.message : 'An Unexpected error occurred';
     return { error: message, status: 500 };
   }
-}
+};
 
 export const getCode = async (id: string) => {
   try {

@@ -328,6 +328,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
           files: projectFiles,
           response: chats[1].message
         }, chats[0].message);
+        console.log('Error', error);
         if (!error && data) {
           setId(data.id);
           setTitle(template);
