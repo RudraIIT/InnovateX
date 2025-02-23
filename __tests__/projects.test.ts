@@ -1,7 +1,6 @@
 import {test, expect, beforeEach, vi} from "vitest"
 import {GET} from "@/app/api/projects/route"
 import fs from "fs/promises"
-import path from "path"
 import { NextRequest } from "next/server"
 
 vi.mock("fs/promises")
@@ -11,8 +10,6 @@ const createMockRequest = (url:string) => {
         nextUrl: new URL(url),
     } as NextRequest
 }
-
-const mockTemplateDir = path.join(process.cwd(), "public", "template")
 
 beforeEach(() => {
     vi.resetAllMocks();
