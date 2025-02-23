@@ -77,7 +77,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["root"]));
   const [activeFile, setActiveFile] = useState<string>("");
   const [writeOnTerminal, setWriteOnTerminal] = useState<Terminal>();
-  const [chats, setChats] = useState<Chat[]>([]);
+  const [chats, setChats] = useState<Chat[]>(template ? [{ message: "Template Initialized", type: ChatType.PROMPT }, { message: "Give me prompt to modify code", type: ChatType.RESPONSE }] : []);
   const [fileSystem, setFileSystem] = useState<FileNode[]>([]);
   const [tabValue, setTabValue] = useState<"editor" | "preview">("editor");
   const [startingDevServer, setStartingDevServer] = useState(false);
