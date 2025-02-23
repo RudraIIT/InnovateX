@@ -2,7 +2,7 @@ import { test, expect, beforeEach, vi } from "vitest"
 import { POST } from "@/app/api/modify/[codeId]/route"
 import { db } from "@/lib/db"
 import axios from "axios"
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 import { parseResponse } from "@/helpers/parseResponse"; 
 
 vi.mock("@/lib/db", () => ({
