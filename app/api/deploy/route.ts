@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import axios from "axios";
-import unzipper from "unzipper";
 import { createHash } from "crypto";
+import path from "path";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export async function POST(req: NextRequest) {
     try {
@@ -12,84 +11,67 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Vercel API Key is missing" }, { status: 500 });
         }
 
-        // Get form data including the zip file
         const formData = await req.formData();
-        const zipFile = formData.get("zip") as File;
+        const fileSystemBlob = formData.get("fileSystem") as File;
         const projectName = formData.get("projectName") as string;
 
-        if (!zipFile || !projectName) {
-            return NextResponse.json({ 
-                error: "Missing zip file or projectName" 
-            }, { status: 400 });
-        }
+        const fileSystemText = await fileSystemBlob.text();
+        const fileSystem = JSON.parse(fileSystemText);
 
-        // Create temporary directory
-        const tmpDir = path.join("public/tmp");
-        await fs.mkdir(tmpDir, { recursive: true });
 
-        // Save uploaded zip file
-        const zipPath = path.join(tmpDir, `${projectName}.zip`);
-        const buffer = Buffer.from(await zipFile.arrayBuffer());
-        await fs.writeFile(zipPath, buffer);
-
-        console.log("Extracting ZIP file...");
-        const extractPath = path.join("/tmp", projectName);
-        await fs.mkdir(extractPath, { recursive: true });
-
-        const directory = await unzipper.Open.file(zipPath);
-        await directory.extract({ path: extractPath });
-
-        let rootPath = path.join(extractPath, projectName);
-        const extractedItems = await fs.readdir(extractPath, { withFileTypes: true });
-        if (extractedItems.length === 1 && extractedItems[0].isDirectory()) {
-            rootPath = path.join(extractPath, extractedItems[0].name);
-        }
-        console.log("Using extracted path:", rootPath);
-
-        const collectFiles = async (dir: string, baseDir: string = ""): Promise<any[]> => {
-            const entries = await fs.readdir(dir, { withFileTypes: true });
-            const files = await Promise.all(
-                entries.map(async (entry) => {
-                    const fullPath = path.join(dir, entry.name);
-                    const relativePath = path.join(baseDir, entry.name);
-
-                    if (entry.name === ".git" || entry.name.startsWith(".")) {
-                        return null;
+        const collectFiles = (items: any, basePath = ""): { file: string; data: Buffer | string; sha: string; size: number }[] => {
+            let files: any[] = [];
+        
+            for (const item of items) {
+                const fullPath = path.join(basePath, item.name).replace(/\\/g, "/");
+        
+                if (item.type === "folder") {
+                    files.push({
+                        file: fullPath + "/",
+                        data: "",
+                        sha: createHash("sha1").update("").digest("hex"),
+                        size: 0,
+                    });
+        
+                    if (item.children && Array.isArray(item.children)) {
+                        files = files.concat(collectFiles(item.children, fullPath));
                     }
-
-                    if (entry.isDirectory()) {
-                        return collectFiles(fullPath, relativePath);
-                    } else {
-                        const content = await fs.readFile(fullPath);
-                        const sha = createHash("sha1").update(content).digest("hex");
-                        return {
-                            file: relativePath.replace(/\\/g, "/"),
-                            data: content,
-                            sha,
-                            size: content.length,
-                        };
-                    }
-                })
-            );
-            return files.flat().filter(Boolean);
+                } else if (item.type === "file") {
+                    const fileContent = item.content ?? "";
+                    const buffer = Buffer.from(fileContent, "utf-8");
+                    const sha = createHash("sha1").update(buffer).digest("hex");
+        
+                    files.push({
+                        file: fullPath,
+                        data: buffer,
+                        sha,
+                        size: buffer.length,
+                    });
+                }
+            }
+        
+            return files;
         };
+        
+        const vercelFiles = collectFiles(fileSystem);
+        
 
-        const vercelFiles = await collectFiles(rootPath);
         if (vercelFiles.length === 0) {
-            return NextResponse.json({ error: "No valid files found for deployment" }, { status: 400 });
+            return NextResponse.json({ error: "No valid files for deployment" }, { status: 400 });
         }
 
         console.log("Uploading files to Vercel...");
         await Promise.all(
-            vercelFiles.map(async (file) => {
+            vercelFiles.map(async (file: { file: string; data: string | Buffer; sha: string; size: number; }) => {
                 await axios.post(
                     "https://api.vercel.com/v2/files",
-                    file.data,
+                     file.data,
                     {
                         headers: {
                             Authorization: `Bearer ${apiKey}`,
                             "Content-Type": "application/octet-stream",
                             "x-vercel-digest": file.sha,
+                            "x-vercel-file": file.file,
                         },
                     }
                 );
@@ -106,7 +88,7 @@ export async function POST(req: NextRequest) {
                     sha,
                     size,
                 })),
-                projectId: process.env.VERCEL_PROJECT_ID,
+                // projectId: process.env.VERCEL_PROJECT_ID,
                 target: "production",
                 projectSettings: { framework: "nextjs" },
             },
@@ -117,10 +99,6 @@ export async function POST(req: NextRequest) {
                 },
             }
         );
-
-        // Cleanup
-        await fs.rm(tmpDir, { recursive: true, force: true });
-        await fs.rm(extractPath, { recursive: true, force: true });
 
         return NextResponse.json(response.data);
     } catch (error: any) {
@@ -134,6 +112,6 @@ export async function POST(req: NextRequest) {
 
 export const config = {
     api: {
-        bodyParser: false, // Disable default body parser to handle form data
+        bodyParser: false,
     },
 };

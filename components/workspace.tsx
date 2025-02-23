@@ -1,5 +1,8 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from "react";
 import {
   ChevronDown,
@@ -7,6 +10,7 @@ import {
   Code,
   File,
   Folder,
+  LoaderIcon,
   Maximize,
   MessageCircle,
   Minimize,
@@ -37,7 +41,6 @@ import { UserButton, useUser } from "@clerk/nextjs";
 import { TerminalDrawer } from "./terminal-drawer";
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -45,6 +48,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { fetchProjectTree } from "@/utils/zip";
+import { generateSlug } from 'random-word-slugs';
+import Link from "next/link";
 
 interface FileNode {
   name: string;
@@ -60,9 +66,10 @@ interface Chat {
 
 interface WorkspaceProps {
   initialId?: string;
+  template?: string;
 }
 
-export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
+export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) => {
   const navigate = useRouter();
   const [id, setId] = useState<string | undefined>(initialId);
   const [prompt, setPrompt] = useState<string>("");
@@ -73,7 +80,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(["root"]));
   const [activeFile, setActiveFile] = useState<string>("");
   const [writeOnTerminal, setWriteOnTerminal] = useState<Terminal>();
-  const [chats, setChats] = useState<Chat[]>([]);
+  const [chats, setChats] = useState<Chat[]>(template ? [{ message: "Template Initialized", type: ChatType.PROMPT }, { message: "Give me prompt to modify code", type: ChatType.RESPONSE }] : []);
   const [fileSystem, setFileSystem] = useState<FileNode[]>([]);
   const [tabValue, setTabValue] = useState<"editor" | "preview">("editor");
   const [startingDevServer, setStartingDevServer] = useState(false);
@@ -81,6 +88,9 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   const [maxView, setMaxView] = useState(false);
   const [orgFileSystem, setOrgFileSystem] = useState<FileNode[]>([]);
   const [wcInitialized, setWcInitialized] = useState(false);
+  const [projectFiles, setProjectFiles] = useState<Record<string, any>>({});
+  const [deploying, setDeploying] = useState(false);
+  const [deployedUrl, setDeployedUrl] = useState<string>("");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -297,12 +307,18 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   },[activeFile, fileSystem])
 
   useEffect(() => {
-    const bootWebContainer = async () => {
+    (async () => {
       wcRef.current = await WebContainer.boot();
       console.log("WebContainer initialized");
       setWcInitialized(true);
-    };
-    bootWebContainer();
+    })();
+    (async () => { if (template) {
+        const projectFiles = await fetchProjectTree(template);
+        setProjectFiles(projectFiles);
+        console.log("Project files fetched", projectFiles);
+        setFileSystem(convertToFileNode(projectFiles));
+      }
+    })()
     if (id) {
       const fetchCode = async () => {
         const { data, error } = await getCode(id);
@@ -326,13 +342,14 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   },[])
 
   useEffect(() => {
-    if (wcRef.current && !startingDevServer) {
+    ( async () => {if (wcRef.current && !startingDevServer) {
       const fsTree = {
         ...convertToFileSystemTree(fileSystem),
         ...baseConfig,
       }
-      wcRef.current.mount(fsTree);
+      await wcRef.current.mount(fsTree);
     }
+  })()
   }, [fileSystem, wcRef.current, startingDevServer])
 
   useEffect(() => {
@@ -449,28 +466,27 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
 
   const saveAndDeploy = async () => {
       try {
-          const data = await wcRef.current?.export('dist', { format: 'zip' });
-          if (!data) {
-              console.error("Failed to export data");
-              return;
-          }
-
-          const zip = new Blob([data], { type: 'application/zip' });
           const formData = new FormData();
-          formData.append("zip", zip, "project.zip");
-          formData.append("projectName", "my-project-name");
-
+          const blob = new Blob([JSON.stringify(fileSystem)], { type: "application/json" });
+          formData.append("fileSystem", blob, "fileSystem.json");
+          console.log("fileSystem", fileSystem);
+          formData.append("projectName", generateSlug());
+  
           const response = await fetch("/api/deploy", {
               method: "POST",
               body: formData,
           });
+        
 
           if (!response.ok) {
               throw new Error(`Deployment failed: ${response.statusText}`);
           }
 
           const result = await response.json();
-          console.log("Deployment successful:", result);
+          console.log('Url', result.url);
+          setDeployedUrl(result.url);
+          toast.success(`Deployment successful visit ${result.url} to view the project`);
+          setDeploying(false);
       } catch (error) {
           console.error("Error in saveAndDeploy:", error);
       }
@@ -577,15 +593,24 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
           </div>
 
           <div className="flex items-center gap-4">
+            <Button variant={'outline'} className={`${deployedUrl.length > 0 ? 'block' : 'hidden'}`} size="sm" >  <Link href={`https://${deployedUrl}`} target="_blank">
+              <span className="h-4 w-4">🔗</span>
+            </Link>
+            </Button>
             <Button
               variant="secondary"
               size="sm"
-              onClick={saveAndDeploy}
-              disabled={showFileTree}
+              onClick={() => {
+                if (deploying) return;
+                setDeploying(true);
+                saveAndDeploy();
+              } }
+              disabled={fileSystem.length === 0 || deploying}
               className="bg-gradient-to-r from-[#2A2F35] to-[#3D444C] hover:from-[#3D444C] hover:to-[#2A2F35] text-white md:min-w-[120px] flex items-center justify-center transition-all duration-200"
             >
-              <Rocket className="h-4 w-4  md:mr-2" />
-              <span className="hidden md:block">Deploy Now</span>
+              <Rocket className={`h-4 w-4  md:mr-2 ${deploying ? 'hidden' : 'block'}`} />
+              <LoaderIcon className={`w-6 h-6 mr-2 animate-spin ${deploying ? 'block' : 'hidden'}`} />
+              <span className="hidden md:block">{deploying ? 'Deploying' : 'Deploy Now'}</span>
             </Button>
             <UserButton />
           </div>
