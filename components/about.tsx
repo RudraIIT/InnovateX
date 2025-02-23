@@ -1,6 +1,7 @@
 import React from 'react';
 import HeroVideoDialog from './ui/hero-video-dialog';
 import { CodeBlockFun } from './code-block';
+import Image from 'next/image';
 
 const About = () => {
   return (
@@ -40,6 +41,9 @@ const About = () => {
                     Create stunning, high-performance websites with our no-code and low-code platform.
                 </span>
                 </div>
+                <div className='md:justify-center hidden md:flex'>
+                  <Image src="/ss1.png" alt="Hero Image" width={400} height={400} className='rounded-lg' />
+                </div>
             </div>
             <div className="flex absolute data-rf-layer flex-row inset-[1px] bg-slate-950 rounded-3xl"></div>
             </div>
@@ -52,21 +56,33 @@ const About = () => {
                     Adjust every element with intuitive drag-and-drop tools or dive into custom coding.
                 </span>
                 </div>
+                <div className='md:justify-center hidden md:flex'>
+                  <Image src="/ss3.png" alt="Hero Image" width={400} height={400} className='rounded-lg' />
+                </div>
             </div>
             <div className="flex absolute data-rf-layer flex-row inset-[1px] bg-slate-950 rounded-3xl"></div>
             </div>
         </div>
 
         <div className="flex relative overflow-hidden [&>*:not(.data-rf-layer)]:z-10 flex-col rounded-3xl aspect-[3.5] md:aspect-[2.5] flex-1 min-h-[200px] md:basis-2/3 md:max-h-[400px] bg-gradient-to-b md:bg-gradient-to-r from-indigo-400/40 to-indigo-400/10 md:to-indigo-400/0 hover:to-[#cc5bdd] p-px w-full">
-            <div className="flex flex-col md:flex-row grow hug px-5 md:py-0 py-5 gap-5 md:gap-0 rounded-3xl">
+          <div className="flex flex-col md:flex-row grow px-5 md:py-0 py-5 gap-5 md:gap-0 rounded-3xl">
             <div className="flex flex-col pb-0 md:p-0 font-normal text-neutral-50 gap-2 justify-center">
-                <span className="text-lg tracking-tight">Deploy Instantly</span>
-                <span className="text-sm tracking-tight text-neutral-400">
+              <span className="text-lg tracking-tight">Deploy Instantly</span>
+              <span className="text-sm tracking-tight text-neutral-400">
                 Launch your website in seconds with our optimized, one-click deployment.
-                </span>
+              </span>
             </div>
+            <div className="hidden md:flex md:justify-center md:items-center md:overflow-hidden md:max-w-[50%] md:rounded-lg ml-24">
+              <Image 
+                src="/ss2.png" 
+                alt="Hero Image" 
+                width={600} 
+                height={50} 
+                className="rounded-lg object-cover"
+              />
             </div>
-            <div className="flex absolute data-rf-layer flex-row inset-[1px] bg-slate-950 rounded-3xl"></div>
+          </div>
+          <div className="flex absolute data-rf-layer flex-row inset-[1px] bg-slate-950 rounded-3xl"></div>
         </div>
         </div>
 
