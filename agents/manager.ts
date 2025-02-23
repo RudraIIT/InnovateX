@@ -1,7 +1,8 @@
+import { Dispatch, SetStateAction } from "react";
 import { Response } from "./master";
 import { codeChain } from "@/helpers/agents";
 
-export const generateCode = async (backend: Response, frontend: Response, toastId: string | number, codeId: string, prompt: string) => {
+export const generateCode = async (backend: Response, frontend: Response, codeId: string, prompt: string, setProgress: Dispatch<SetStateAction<number>>) => {
   let response = {
     title: "",
     files: [] as Array<{ name: string; path: string; content: string }>,
@@ -31,6 +32,6 @@ export const generateCode = async (backend: Response, frontend: Response, toastI
     "**Include demo data** when **no data is available** from the backend.",
   ];
 
-  response = await codeChain(response, steps, toastId, codeId, prompt)
+  response = await codeChain(response, steps, codeId, prompt, setProgress)
   return response;
 }

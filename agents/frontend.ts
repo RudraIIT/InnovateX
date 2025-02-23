@@ -1,7 +1,8 @@
+import { Dispatch, SetStateAction } from "react";
 import { Response } from "./master";
 import { codeChain } from "@/helpers/agents";
 
-export const generateCode = async (response: Response, toastId: string | number, codeId: string, prompt: string) => {
+export const generateCode = async (response: Response, codeId: string, prompt: string, setProgress: Dispatch<SetStateAction<number>>) => {
   const steps = [
     "Generate a modern, responsive website with a dark and light futuristic theme.",
     "Create a stylish navbar with a glassmorphism effect and smooth scrolling.",
@@ -25,6 +26,6 @@ export const generateCode = async (response: Response, toastId: string | number,
     "Make sure all components made are used",
     "Make sure there no such class used which not defined by tailwindcss or in globals.css"
   ];
-  response = await codeChain(response, steps, toastId, codeId, prompt) 
+  response = await codeChain(response, steps, codeId, prompt, setProgress) 
   return response;
 }

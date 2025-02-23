@@ -34,7 +34,6 @@ import { getFileLanguage } from "@/helpers/Editor/fileLanguage";
 import { setPrismaLanguage } from "@/helpers/Editor/customLanguage";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { baseConfig } from "@/helpers/baseConfig";
-import { useRouter } from "next/navigation";
 import { createCode, getCode } from "@/actions/code";
 import { generateCode as masterAgent } from "@/agents/master";
 import { UserButton, useUser } from "@clerk/nextjs";
@@ -51,6 +50,7 @@ import {
 import { fetchProjectTree } from "@/utils/zip";
 import { generateSlug } from 'random-word-slugs';
 import Link from "next/link";
+import { Loader } from "./loading-screen";
 
 interface FileNode {
   name: string;
@@ -89,6 +89,12 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
   const [wcInitialized, setWcInitialized] = useState(false);
   const [deploying, setDeploying] = useState(false);
   const [deployedUrl, setDeployedUrl] = useState<string>("");
+  const [progressMaster, setProgressMaster] = useState(0);
+  const [progressFrontend, setProgressFrontend] = useState(0);
+  const [progressBackend, setProgressBackend] = useState(0);
+  const [progressDatabase, setProgressDatabase] = useState(0);
+  const [progressManager, setProgressManager] = useState(0);
+  const [generatingCode, setGeneratingCode] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -211,10 +217,20 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
     const toastId = toast.loading("Thinking...");
     try {
       if (chats.length == 1) {
-        const { data : { id } } = await axios.get(`/api/steps?prompt=${prompt}`);
-        toast.loading("Generating code...", { id: toastId });
+        // const { data : { id } } = await axios.get(`/api/steps?prompt=${prompt}`);
+        // toast.loading("Generating code...", { id: toastId });
         // const { data: { response : { title, files, response }, id : codeId} } = await axios.get(`/api/generate?prompt=${prompt}&steps=${id}`);
-        const { response : { title, files, response }, id : codeId } = await masterAgent(prompt, toastId);
+        setGeneratingCode(true);
+        const { response : { title, files, response }, id : codeId } = await masterAgent(
+          prompt,
+          toastId,
+          setProgressMaster,
+          setProgressBackend,
+          setProgressFrontend,
+          setProgressDatabase,
+          setProgressManager
+        );
+        setGeneratingCode(false);
         setTitle(title);
         addChat(response, ChatType.RESPONSE);
         const fileNodes = convertToFileNode(files);
@@ -563,6 +579,15 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
 
   return (
     <div className="h-screen w-full flex flex-col text-white">
+      {generatingCode && <div className="h-lvh w-lvw backdrop-blur-sm flex justify-center items-center z-50 fixed top-0 left-0">
+        <Loader
+          progress0={progressMaster}
+          progress1={progressDatabase}
+          progress2={progressBackend}
+          progress3={progressFrontend}
+          progress4={progressManager}
+        />
+      </div>}
         <Button variant="default" size="sm" className={`mt-14 fixed left-2 hidden md:${showFileTree ? 'hidden' : 'block'}`} onClick={() => setShowFileTree(true)}>
           <Folder className="h-4 w-4" />
         </Button>
