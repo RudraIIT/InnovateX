@@ -35,7 +35,7 @@ import { setPrismaLanguage } from "@/helpers/Editor/customLanguage";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { baseConfig } from "@/helpers/baseConfig";
 import { useRouter } from "next/navigation";
-import { getCode } from "@/actions/code";
+import { createCode, getCode } from "@/actions/code";
 import { generateCode as masterAgent } from "@/agents/master";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { TerminalDrawer } from "./terminal-drawer";
@@ -87,7 +87,6 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
   const [maxView, setMaxView] = useState(false);
   const [orgFileSystem, setOrgFileSystem] = useState<FileNode[]>([]);
   const [wcInitialized, setWcInitialized] = useState(false);
-  const [projectFiles, setProjectFiles] = useState<Record<string, any>>({});
   const [deploying, setDeploying] = useState(false);
   const [deployedUrl, setDeployedUrl] = useState<string>("");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -323,9 +322,20 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
     })();
     (async () => { if (template) {
         const projectFiles = await fetchProjectTree(template);
-        setProjectFiles(projectFiles);
         console.log("Project files fetched", projectFiles);
-        setFileSystem(convertToFileNode(projectFiles));
+        const { data, error } = await createCode({
+          title: template,
+          files: projectFiles,
+          response: chats[1].message
+        }, chats[0].message);
+        if (!error && data) {
+          setId(data.id);
+          setTitle(template);
+          setFileSystem(convertToFileNode(projectFiles));
+        } else {
+          toast.error("Failed to create code");
+          setChats([]);
+        }
       }
     })()
     if (id) {
