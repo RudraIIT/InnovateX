@@ -47,6 +47,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { fetchProjectTree } from "@/utils/zip";
 
 interface FileNode {
   name: string;
@@ -62,9 +63,11 @@ interface Chat {
 
 interface WorkspaceProps {
   initialId?: string;
+  template?: string;
 }
 
-export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
+export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) => {
+  const navigate = useRouter();
   const [id, setId] = useState<string | undefined>(initialId);
   const [prompt, setPrompt] = useState<string>("");
   const [title, setTitle] = useState<string>("Untitled");
@@ -82,6 +85,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   const [maxView, setMaxView] = useState(false);
   const [orgFileSystem, setOrgFileSystem] = useState<FileNode[]>([]);
   const [wcInitialized, setWcInitialized] = useState(false);
+  const [projectFiles, setProjectFiles] = useState<Record<string, any>>({});
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -298,12 +302,18 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   },[activeFile, fileSystem])
 
   useEffect(() => {
-    const bootWebContainer = async () => {
+    (async () => {
       wcRef.current = await WebContainer.boot();
       console.log("WebContainer initialized");
       setWcInitialized(true);
-    };
-    bootWebContainer();
+    })();
+    (async () => { if (template) {
+        const projectFiles = await fetchProjectTree(template);
+        setProjectFiles(projectFiles);
+        console.log("Project files fetched", projectFiles);
+        setFileSystem(convertToFileNode(projectFiles));
+      }
+    })()
     if (id) {
       const fetchCode = async () => {
         const { data, error } = await getCode(id);
