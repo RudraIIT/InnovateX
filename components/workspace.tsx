@@ -270,19 +270,31 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
     return null;
   }
   const handleCodeChange = (value: string | undefined) => {
+    console.log("handleCodeChange", value);
     if (value === undefined) return;
-    setCode(value);
+    // setCode(value);
     if (orgFileSystem.length === 0) setOrgFileSystem(fileSystem);
-    const updatedFilePath = activeFilePath;
-    if (!updatedFilePath) return;
+    let updatedFilePath = activeFilePath;
+    if (!updatedFilePath) {
+      console.log("No active file path");
+      return;
+    }
+    if (updatedFilePath[0] === "/") updatedFilePath = updatedFilePath.slice(1);
+    console.log("Updated File Path", updatedFilePath);
     const fileName = findNameUsingPath(fileSystem, updatedFilePath);
-    if (!fileName) return;
+    if (!fileName) {
+      console.log("File not found");
+      return;
+    }
+    console.log("File Name", fileName);
     const newFileSystem = updateFileSystem(fileSystem, [{ name: fileName, path: updatedFilePath, content: value }]);
     if (!compareFileSystem(fileSystem, newFileSystem)) {
       setFileSystem(newFileSystem);
     } else {
       setOrgFileSystem([]);
     }
+    wcRef.current?.fs.writeFile(updatedFilePath, value);
+    setCode(value);
   }
 
   useEffect(() => {
