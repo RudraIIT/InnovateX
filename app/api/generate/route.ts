@@ -4,8 +4,14 @@ import axios from "axios";
 import { parseResponse } from "@/helpers/parseResponse";
 import path from "path";
 import { readFileSync, rmSync } from "fs";
+import { currentUser } from "@clerk/nextjs/server";
+import { createCode } from "@/actions/code";
 
 export async function GET(req: NextRequest) {
+  const user = await currentUser();
+  if (!user) return NextResponse.error();
+  const email = user.emailAddresses[0].emailAddress;
+  if (!email) return NextResponse.error();
   try {
     const prompt = req.nextUrl.searchParams.get('prompt');
     if (!prompt) return NextResponse.error();
@@ -27,7 +33,15 @@ export async function GET(req: NextRequest) {
     });
     const response = parseResponse(data.response);
     if (!response.title) response.title = title;
-    return NextResponse.json({ response }, { status: 200 });
+    response.files = response.files.map(({ name, path, content }) => {
+      if (path[0] == '/') path = path.slice(1);
+      return { name, path, content };
+    })
+    const { data : codeData, error } = await createCode(response, prompt);
+    if (error) return NextResponse.error();
+    if (!codeData) return NextResponse.error();
+    const { id: codeId } = codeData;
+    return NextResponse.json({ response, id : codeId }, { status: 200 });
   } catch (error) {
     console.log(error);
     return NextResponse.error();

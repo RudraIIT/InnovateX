@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
 import { Dispatch, SetStateAction, useEffect, useRef } from "react";
-import { Terminal } from "xterm";
-import { FitAddon } from "xterm-addon-fit";
+import { Terminal } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
 import { WebContainerManager } from "@/utils/webcontainer";
-import "xterm/css/xterm.css";
+import '@xterm/xterm/css/xterm.css';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const dynamicHighlight = (text: string): string => {

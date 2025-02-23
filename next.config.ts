@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  reactStrictMode: false,
   /* config options here */
   images: {
     domains: ['assets.aceternity.com', 'upload.wikimedia.org', 'hono.dev', 'mern.io', 'startup-template-sage.vercel.app'],

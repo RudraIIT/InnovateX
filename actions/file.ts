@@ -1,9 +1,18 @@
 "use server";
 
 import { db } from "@/lib/db";
-// @ts-expect-error FormatOutput function may not have proper typings
-import { formatOutput } from "@/helper/next-stream";
 import { currentUser } from "@clerk/nextjs/server";
+
+const formatOutput = (name: string, path: string, content: string) => {
+  name = name.split('/').pop() || name;
+  if (path.split('/')[0] == 'pages') path = 'src/app' + path.split('pages')[1];
+  if (path.split('/')[0] == 'app') path = 'src/' + path;
+  if (content) {
+    const match = content.match(/^```(?:\w+)?\n([\s\S]*?)\n```$/);
+    if (match) content = match[1];
+  }
+  return { name, path, content };
+}
 
 export const updateFiles = async (accessToken: string, codeId: string, files: { name: string; path: string; content?: string }[]) => {
   try {

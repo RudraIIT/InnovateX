@@ -103,6 +103,18 @@ Ensure these files exist to prevent compilation errors:
 
 ✅ **Correct Import/Export Usage**
 - Every import should be correct, and every function/component should be exported properly.
+- Always include './globals.css' in 'src/app/layout.jsx'.
+
+✅ **Package.json**
+- Include important packages in 'package.json' for using Tailwind CSS, Prisma, and NextAuth.
+  - **tailwindcss**
+  - **@prisma/client**
+  - **next-auth**
+  - **react**
+  - **react-dom**
+  - **next**
+  - **postcss**
+  - **autoprefixer**
 
 🚨 **Do NOT generate any additional folders or files beyond the specified structure.**
 🚨 **Strictly ensure every file is at its correct location.**
@@ -143,7 +155,13 @@ Follow these steps to generate the required code:
 - public/ (if needed)
 - src/
   - app/
-    - api/ (ALL API routes must be inside this)
+    - api
+      /** example */
+      - users
+        - route.js
+        - [id]
+          - route.js
+      /** example */
     - globals.css
     - layout.jsx
     - page.jsx

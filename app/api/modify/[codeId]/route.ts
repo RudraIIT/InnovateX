@@ -24,29 +24,35 @@ const stringifyCodeFiles = (codeFiles: { name: string, path: string, content: st
   }).join('\n\n');
 };
 
-export async function GET(req: NextRequest, { params } : ModifyRouteParams) {
+export async function POST(req: NextRequest, { params } : ModifyRouteParams) {
   const { codeId } = await params;
   const prompt = req.nextUrl.searchParams.get('prompt');
+  const system = req.nextUrl.searchParams.get('system');
   try {
-    if (!prompt || !codeId) return NextResponse.error();
-    const code = await db.code.findFirst({
-      where: {
-        id: codeId,
-      },
-      select: {
-        id: true,
-        title: true,
-        files: {
-          select: {
-            name: true,
-            path: true,
-            content: true,
+    let body;
+    if (system) body = await req.json();                                                                                    
+    if (!prompt || !codeId) return NextResponse.json({error:"Missing prompt or codeId"}, {status: 400});
+    let codeFiles = body?.files || [];
+    if (!system) {
+      const code = await db.code.findFirst({
+        where: {
+          id: codeId,
+        },
+        select: {
+          id: true,
+          title: true,
+          files: {
+            select: {
+              name: true,
+              path: true,
+              content: true,
+            },
           },
         },
-      },
-    });
-    if (!code) return NextResponse.error();
-    const codeFiles = code.files;
+      });
+      if (!code) return NextResponse.json({error: "Missing code"},{status:500});
+      codeFiles = code.files
+    }
     const codeFilesString = stringifyCodeFiles(codeFiles);
     const codeModificationPrompt = CODE_MODIFICATION_PROMPT(prompt, codeFilesString);
     const { data } = await axios.post("https://api-lr.agent.ai/v1/action/invoke_llm", {
@@ -59,44 +65,50 @@ export async function GET(req: NextRequest, { params } : ModifyRouteParams) {
       }
     });
     const response = parseResponse(data.response);
-    await db.$transaction(
-      response.files.map(({ name, path, content }) => {
-        return db.file.upsert({
-          where: {
-            path_codeId: {
+    response.files = response.files.map(({ name, path, content }) => {
+      if (path[0] == '/') path = path.slice(1);
+      return { name, path, content };
+    })
+    if (!system) {
+      await db.$transaction(
+        response.files.map(({ name, path, content }) => {
+          return db.file.upsert({
+            where: {
+              path_codeId: {
+                path,
+                codeId,
+              }
+            },
+            update: { content },
+            create: {
+              name,
               path,
+              content,
               codeId,
             }
-          },
-          update: { content },
-          create: {
-            name,
-            path,
-            content,
-            codeId,
+          })}
+        )
+      );
+      await db.code.update({
+        where: {
+          id: codeId,
+        },
+        data: {
+          chat: {
+            create: [
+              {
+                message: prompt,
+                type: 'PROMPT',
+              },
+              {
+                message: response.response,
+                type: 'RESPONSE',
+              },
+            ]
           }
-        })}
-      )
-    );
-    await db.code.update({
-      where: {
-        id: codeId,
-      },
-      data: {
-        chat: {
-          create: [
-            {
-              message: prompt,
-              type: 'PROMPT',
-            },
-            {
-              message: response.response,
-              type: 'RESPONSE',
-            },
-          ]
         }
-      }
-    })
+      })
+    }
     return NextResponse.json({ response }, { status: 200 });
   } catch (error) {
     console.log(error);

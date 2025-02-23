@@ -1,3 +1,4 @@
+import { currentUser } from "@clerk/nextjs/server";
 import axios from "axios";
 import { writeFileSync } from "fs";
 import { NextRequest, NextResponse } from "next/server";
@@ -5,6 +6,8 @@ import path from "path";
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(req: NextRequest) {
+  const session = await currentUser();
+  if (!session) return NextResponse.error();
   try {
     const prompt = req.nextUrl.searchParams.get('prompt');
     if (!prompt) return NextResponse.error();
