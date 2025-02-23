@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 const promptStore = new Map<string, string>()
 
-export async function GET(request: Request, store= promptStore) {
+export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
 
@@ -13,10 +13,10 @@ export async function GET(request: Request, store= promptStore) {
     )
   }
 
-  const prompt = store.get(userId) ?? null
+  const prompt = promptStore.get(userId) ?? null
 
   if (prompt) {
-    store.delete(userId)
+    promptStore.delete(userId)
   }
   
   return NextResponse.json({
@@ -25,7 +25,7 @@ export async function GET(request: Request, store= promptStore) {
   })
 }
 
-export async function POST(request: Request,store= promptStore) {
+export async function POST(request: Request) {
   try {
     const { userId, prompt } = await request.json()
 
@@ -43,7 +43,7 @@ export async function POST(request: Request,store= promptStore) {
       )
     }
 
-    store.set(userId, prompt)
+    promptStore.set(userId, prompt)
 
     return NextResponse.json({
       message: 'Value updated successfully',
