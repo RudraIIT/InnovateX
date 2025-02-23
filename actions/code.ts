@@ -3,15 +3,28 @@
 import { db } from "@/lib/db";
 import { currentUser } from "@clerk/nextjs/server";
 
+
 export const createCode = async (
   response: {
     title?: string;
     files: { name: string; path: string; content: string }[];
     response: string;
-  },
-  prompt: string,
+  } | null,
+  prompt?: string,
 ) => {
   try {
+    if (!response || typeof response !== 'object') {
+      return { error: 'Response object is required', status: 400 };
+    }
+
+    if (!Array.isArray(response.files)) {
+      return { error: 'Files array is required', status: 400 };
+    }
+
+    if (!prompt) {
+      return { error: 'Prompt is required', status: 400 };
+    }
+
     const session = await currentUser();
     if (!session) return { error: 'Unauthorized', status: 401 };
     const email = session.emailAddresses[0].emailAddress;
