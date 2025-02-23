@@ -22,6 +22,7 @@ import { FileUploader } from "./file-upload"
 import { Navbar } from "./navbar"
 import { Templates } from "./templates"
 import { useRouter } from "next/navigation"
+import { UsersCode } from "./list"
 
 export function Prompt() {
   const { user, isSignedIn } = useUser()
@@ -91,6 +92,9 @@ export function Prompt() {
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>
+              <SidebarMenuItem>
+                  <UsersCode />
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <button>
