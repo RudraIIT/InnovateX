@@ -22,6 +22,7 @@ const processDirectory = async (dirPath: string): Promise<FileObject[]> => {
       const subDirFiles = await processDirectory(fullPath);
       fileArray.push(...subDirFiles);
     } else if (file.isSymbolicLink()) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const symlinkTarget = await fs.readlink(fullPath);
       fileArray.push({
         name: file.name,
