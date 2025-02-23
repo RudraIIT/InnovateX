@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params } : ModifyRouteParams) {
   try {
     let body;
     if (system) body = await req.json();                                                                                    
-    if (!prompt || !codeId) return NextResponse.error();
+    if (!prompt || !codeId) return NextResponse.json({error:"Missing prompt or codeId"}, {status: 400});
     let codeFiles = body?.files || [];
     if (!system) {
       const code = await db.code.findFirst({
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest, { params } : ModifyRouteParams) {
           },
         },
       });
-      if (!code) return NextResponse.error();
+      if (!code) return NextResponse.json({error: "Missing code"},{status:500});
       codeFiles = code.files
     }
     const codeFilesString = stringifyCodeFiles(codeFiles);
