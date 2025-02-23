@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, use } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -11,6 +11,7 @@ import {
   MessageCircle,
   Minimize,
   Play,
+  Rocket,
   Sparkles,
   X
 } from "lucide-react";
@@ -19,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Editor, { Monaco, useMonaco } from "@monaco-editor/react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { Terminal } from "xterm";
+import { Terminal } from "@xterm/xterm";
 import { TerminalComponent } from "@/components/terminal";
 import { ChatType } from "@prisma/client";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,18 @@ import { baseConfig } from "@/helpers/baseConfig";
 import { useRouter } from "next/navigation";
 import { getCode } from "@/actions/code";
 import { generateCode as chainCodeGeneration } from "@/helpers/promptChain";
+import { UserButton, useUser } from "@clerk/nextjs";
+import { TerminalDrawer } from "./terminal-drawer";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 
 interface FileNode {
   name: string;
@@ -73,6 +86,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   const chatRef = useRef<HTMLDivElement>(null);
   const monaco = useMonaco();
   const wcRef = useRef<WebContainer>(null);
+  const { user } = useUser();
   const convertToFileNode = (files: { name: string; path: string; content: string }[]): FileNode[] => {
     const fileMap: { [key: string]: FileNode } = {};
 
@@ -214,6 +228,44 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
       toast.error("Failed to generate code", { id: toastId });
     }
   }
+
+  const generateInitCode = async () => {
+    const {data : { prompt }} = await axios.get(`/api/prompt?userId=${user?.id}`);
+    console.log("Prompt from dashboard:", prompt);
+    if (!prompt) return;
+    const toastId = toast.loading("Thinking...");
+    try {
+      if (chats.length == 1) {
+        const { data : { id } } = await axios.get(`/api/steps?prompt=${prompt}`);
+        toast.loading("Generating code...", { id: toastId });
+        // const { data: { response : { title, files, response }, id : codeId} } = await axios.get(`/api/generate?prompt=${prompt}&steps=${id}`);
+        const { response : { title, files, response }, id : codeId } = await chainCodeGeneration(prompt, toastId);
+        setTitle(title);
+        addChat(response, ChatType.RESPONSE);
+        const fileNodes = convertToFileNode(files);
+        setFileSystem(fileNodes);
+        toast.success("Code Generated", { id: toastId });
+        setId(codeId);
+      } else {
+        toast.loading("Modifying code...", { id: toastId });
+        const { data: { response : { title, files, response } } } = await axios.post(`/api/modify/${id}?prompt=${prompt}`);
+        if (title) setTitle(title);
+        addChat(response, ChatType.RESPONSE);
+        const packageJsonFile: { name: string; path: string; content: string } | undefined = files.find((file: { name: string; path: string; content: string }) => file.name === "package.json");
+        if (packageJsonFile) {
+          setPreviewUrl("");
+          startDevServer();
+        }
+        const newFileSystem = updateFileSystem(fileSystem, files);
+        setFileSystem(newFileSystem);
+        toast.success("Code Modified", { id: toastId });
+      }
+      setTabValue("preview");
+    } catch (error) {
+      toast.error("Failed to generate code", { id: toastId });
+    }
+  }
+
   const addChat = (message: string, type: ChatType) => {
     setChats((prev) => [...prev, { message, type }]);
     setPrompt("");
@@ -264,6 +316,11 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   useEffect(() => {
     generateCode();
   }, [chats]);
+
+  useEffect(() => {
+    generateInitCode();
+  }
+  , []);
 
   useEffect(() => {
     setCode(() => {
@@ -423,6 +480,35 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
     setStartingDevServer(false);
   };
 
+  const saveAndDeploy = async () => {
+      try {
+          const data = await wcRef.current?.export('dist', { format: 'zip' });
+          if (!data) {
+              console.error("Failed to export data");
+              return;
+          }
+
+          const zip = new Blob([data], { type: 'application/zip' });
+          const formData = new FormData();
+          formData.append("zip", zip, "project.zip");
+          formData.append("projectName", "my-project-name");
+
+          const response = await fetch("/api/deploy", {
+              method: "POST",
+              body: formData,
+          });
+
+          if (!response.ok) {
+              throw new Error(`Deployment failed: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+          console.log("Deployment successful:", result);
+      } catch (error) {
+          console.error("Error in saveAndDeploy:", error);
+      }
+  };
+
   const renderFileTree = (nodes: FileNode[], path = "") => {
     return nodes.map((node) => {
       const currentPath = `${path}/${node.name}`;
@@ -461,37 +547,82 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   };
 
   return (
-    <div className="h-screen w-full flex flex-col bg-[#1E2227] text-white">
-      <header className="h-12 flex items-center justify-between px-4 border-b border-[#2A2F35] bg-[#1B1F23]">
-        <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" onClick={() => setShowFileTree(!showFileTree)}>
-          <Folder className="h-4 w-4 mr-2" />
-          Code Editor
+    <div className="h-screen w-full flex flex-col text-white">
+        <Button variant="default" size="sm" className={`mt-14 fixed left-2 hidden md:${showFileTree ? 'hidden' : 'block'}`} onClick={() => setShowFileTree(true)}>
+          <Folder className="h-4 w-4" />
         </Button>
-        <Button
-          variant="default"
-          size="sm"
-          className="bg-[#238636] hover:bg-[#2ea043]"
-          onClick={() => {
-            if (tabValue === "editor") setTabValue("preview");
-            else setTabValue("editor");
-          }}
-          disabled={tabValue === "editor" && !wcInitialized}
-        >
-          {tabValue === "editor" &&
-            (
-              <>
-                <Play className="h-4 w-4 mr-2" />
-                Run
-              </>
-            )}
-          {tabValue === "preview" && (
-            <>
-              <Code className="h-4 w-4 mr-2" />
-              Code
-            </>
-          )}
-        </Button>
-      </header>
+
+        <header className="h-12 flex items-center justify-between px-4 border-b border-[#2A2F35] w-full">
+          <div className="flex items-center gap-4 min-w-0">
+            <span className="leading-7 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent text-lg font-semibold whitespace-nowrap">
+              InnovateX
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
+            <Button
+              variant="default"
+              size="sm"
+              className="bg-[#238636] hover:bg-[#2ea043] text-white md:min-w-[100px] flex items-center justify-center transition-colors duration-200"
+              onClick={() => {
+                if (tabValue === "editor") setTabValue("preview");
+                else setTabValue("editor");
+              }}
+              disabled={tabValue === "editor" && !wcInitialized || showFileTree}
+            >
+              {tabValue === "editor" && (
+                <>
+                  <Play className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:block">Preview</span>
+                </>
+              )}
+              {tabValue === "preview" && (
+                <>
+                  <Code className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:block">Code</span>
+                </>
+              )}
+            </Button>
+            <div className="block md:hidden">
+              <TerminalDrawer setWriteOnTerminal={setWriteOnTerminal} />
+            </div>
+            <div className="block md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Folder className="h-4 w-4" />
+              </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <div className="mx-auto w-full max-w-sm">
+                  <SheetHeader>
+                    <SheetTitle></SheetTitle>
+                    <SheetDescription></SheetDescription>
+                  </SheetHeader>
+                    {!fileSystem.length && <div className="flex items-center justify-center h-full text-gray-400">
+                      No files found
+                      </div>}
+                    {fileSystem.length && <ScrollArea className="h-full p-4">{renderFileTree(fileSystem)}</ScrollArea>}
+                </div>
+              </SheetContent>
+            </Sheet>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={saveAndDeploy}
+              disabled={showFileTree}
+              className="bg-gradient-to-r from-[#2A2F35] to-[#3D444C] hover:from-[#3D444C] hover:to-[#2A2F35] text-white md:min-w-[120px] flex items-center justify-center transition-all duration-200"
+            >
+              <Rocket className="h-4 w-4  md:mr-2" />
+              <span className="hidden md:block">Deploy Now</span>
+            </Button>
+            <UserButton />
+          </div>
+        </header>
       <ResizablePanelGroup
         direction="horizontal"
         className="flex flex-grow"
@@ -499,13 +630,14 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
         {showFileTree && (
           <>
             <ResizablePanel
-              defaultSize={100}
-              className="border-r border-[#2A2F35] bg-[#1B1F23]"
+              onResize={(size) => {if (size < 5) setShowFileTree(false)}}
+              defaultSize={120}
+              className="border-r border-[#2A2F35] hidden md:block"
             >
-              {!fileSystem.length && <div className="flex items-center justify-center h-full text-gray-400">
+              {!fileSystem.length && <div className="hidden: md:block flex items-center justify-center h-full text-gray-400">
                 No files found
                 </div>}
-              {fileSystem.length && <ScrollArea className="h-full p-4">{renderFileTree(fileSystem)}</ScrollArea>}
+              {fileSystem.length && <ScrollArea className="h-full p-4 hidden md:block">{renderFileTree(fileSystem)}</ScrollArea>}
             </ResizablePanel>
             <ResizableHandle/>
           </>
@@ -514,12 +646,12 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
           <ResizablePanelGroup direction="vertical" className="flex flex-col h-full">
             <ResizablePanel
               defaultSize={100}
-              className="border-b border-[#2A2F35] bg-[#1B1F23] flex-grow"
+              className="border-b border-[#2A2F35] flex-grow"
             >
               <Tabs value={tabValue} onValueChange={(value) => setTabValue(value as "editor" | "preview")} className="h-full">
                 <TabsContent value="editor" className="h-full">
                   <div className="flex flex-col h-full">
-                    <div className="border-b border-[#2A2F35] px-4 py-2 bg-[#1E2227]">
+                    <div className="border-b border-[#2A2F35] px-4 py-2">
                       <span className="text-sm">{activeFile}</span>
                     </div>
                     <div className="flex-1 overflow-hidden">
@@ -574,9 +706,11 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
               defaultSize={50}
               minSize={30}
               maxSize={70}
-              className="border-b border-[#2A2F35] bg-[#1B1F23] relative"
+              className="border-b border-[#2A2F35] relative hidden md:block"
             >
+              <div className="hidden md:block">
               <TerminalComponent setWriteOnTerminal={setWriteOnTerminal} />
+              </div>
             </ResizablePanel>
           </ResizablePanelGroup>
         </ResizablePanel>
@@ -585,13 +719,20 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
             <ResizableHandle/>
             <ResizablePanel
               defaultSize={150}
-              className="border-l border-[#2A2F35] bg-[#1B1F23]"
-              onResize={(size) => {if (size < 2) setShowConsole(false)}}
+              className="border-l border-[#2A2F35] hidden md:block"
+              onResize={(size) => {if (size < 5) setShowConsole(false)}}
             >
-              <div className="h-full flex flex-col">
-                <div className="border-b border-[#2A2F35] p-2 flex justify-between">
-                  <span className="text-sm">Chat</span>
-                  <Button variant="ghost" size="icon" onClick={() => setShowConsole(false)}>
+              <div className="h-full flex flex-col hidden md:block">
+                <div className="border-b border-[#2A2F35] p-2 flex items-center justify-between">
+                  <span className="text-2xl font-semibold bg-gradient-to-l from-indigo-400 from-10% via-sky-400 via-30% to-emerald-300 to-90% bg-clip-text text-transparent flex-1 text-center">
+                    Chat
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowConsole(false)}
+                    className="text-gray-400 hover:text-white hover:bg-[#2A2F35] transition-colors"
+                  >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
@@ -611,7 +752,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
                             <Sparkles className="h-5 w-5 text-[#238636]" />
                           )}
                         </div>
-                        <div className={`ml-2 flex-grow px-5 ${chat.type === ChatType.PROMPT ? "bg-[#303030] py-2 rounded-full" : ""}`}>
+                        <div className={`ml-4 flex-grow px-5 ${chat.type === ChatType.PROMPT ? "bg-[#303030] py-2 rounded-xl" : ""}`}>
                           <span className="text-sm">{chat.message}</span>
                         </div>
                       </div>
@@ -626,7 +767,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
                   </div>
                   <div className="flex items-center w-full">
                     <Input
-                      placeholder="Describe here..."
+                      placeholder="Your prompt here..."
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       className="flex-1 min-w-10"
@@ -646,13 +787,87 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
           </>
         )}
       </ResizablePanelGroup>
+      <Button
+          variant="default"
+          className={`fixed bottom-8 h-12 w-12 right-6 z-10 p-4 rounded-full shadow-lg bg-[#238636] hover:bg-[#2ea043] text-white transition-all duration-200 hidden md:${
+            showConsole ? 'hidden' : 'block'
+          }`}
+          onClick={() => setShowConsole(true)}
+        >
+          <MessageCircle size='10' />
+        </Button>
+        <div className="block md:hidden">
+        <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="outline" size="sm" className="fixed bottom-8 right-6 p-4 rounded-full shadow-lg bg-[#238636] hover:bg-[#2ea043] text-white"><MessageCircle className="h-4 w-4"/></Button>
+        </SheetTrigger>
+        <SheetContent>
+          <div className="mx-auto w-full max-w-sm">
+            <SheetHeader>
+              <SheetTitle></SheetTitle>
+              <SheetDescription></SheetDescription>
+            </SheetHeader>
+            <div className="h-full flex flex-col">
+                  <div className="border-b border-[#2A2F35] p-2 flex items-center justify-between">
+                    <span className="text-2xl font-semibold bg-gradient-to-l from-indigo-400 from-10% via-sky-400 via-30% to-emerald-300 to-90% bg-clip-text text-transparent flex-1 text-center">
+                      Chat
+                    </span>
+                  </div>
+                  <div className="flex-1 p-4 flex flex-col relative h-full overflow-y-scroll">
+                    <div  className="flex-1 p-4 overflow-y-scroll" ref={chatRef}>
+                      {chats.length === 0 && (
+                        <div className="text-center text-gray-400">
+                          Describe Your website to see result
+                        </div>
+                      )}
+                      {chats.map((chat, index) => (
+                        <div key={index} className="mb-5 flex items-start justify-start">
+                          <div className="bg-[#2A2F35] p-2 rounded-full inline-block">
+                            {chat.type === ChatType.PROMPT ? (
+                              <MessageCircle className="h-5 w-5 text-[#7982a9]" />
+                            ) : (
+                              <Sparkles className="h-5 w-5 text-[#238636]" />
+                            )}
+                          </div>
+                          <div className={`ml-4 flex-grow px-5 ${chat.type === ChatType.PROMPT ? "bg-[#303030] py-2 rounded-xl" : ""}`}>
+                            <span className="text-sm">{chat.message}</span>
+                          </div>
+                        </div>
+                      ))}
+                      {chats.length > 0 && chats[chats.length - 1].type === ChatType.PROMPT && (
+                        <div className="bouncing-loader">
+                          <div></div>
+                          <div></div>
+                          <div></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              <SheetFooter>
+                <div className="flex flex-col items-center w-full gap-4">
+                      <Input
+                        placeholder="Your prompt here..."
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        className="flex-1 min-h-12 min-w-10"
+                      />
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => addChat(prompt, ChatType.PROMPT)}
+                      >
+                        Send
+                      </Button>
+                  </div>
+            </SheetFooter>
+          </div>
+        </SheetContent>
+      </Sheet>
+      </div>
       <footer className="h-6 border-t border-[#2A2F35] px-4 text-xs text-gray-400 bg-[#1B1F23] flex items-center">
         <span>{activeFile ? getFileLanguage(activeFile) : "No File"}</span>
-        {!showConsole && (
-          <Button variant="ghost" size="sm" className="ml-auto text-xs" onClick={() => setShowConsole(true)}>
-            Show Chat
-          </Button>
-        )}
       </footer>
     </div>
   );
