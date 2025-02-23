@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
                     sha,
                     size,
                 })),
-                projectId: process.env.VERCEL_PROJECT_ID,
+                // projectId: process.env.VERCEL_PROJECT_ID,
                 target: "production",
                 projectSettings: { framework: "nextjs" },
             },
