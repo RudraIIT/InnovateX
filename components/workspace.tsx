@@ -595,9 +595,11 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId, template }) =>
 
         <header className="h-12 flex items-center justify-between px-4 border-b border-[#2A2F35] w-full">
           <div className="flex items-center gap-4 min-w-0">
+          <Link href="/dashboard">
             <span className="leading-7 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent text-lg font-semibold whitespace-nowrap">
               InnovateX
             </span>
+          </Link>
           </div>
 
           <div className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
