@@ -33,7 +33,8 @@ import { baseConfig } from "@/helpers/baseConfig";
 import { useRouter } from "next/navigation";
 import { getCode } from "@/actions/code";
 import { generateCode as chainCodeGeneration } from "@/helpers/promptChain";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 
 interface FileNode {
   name: string;
@@ -75,6 +76,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   const chatRef = useRef<HTMLDivElement>(null);
   const monaco = useMonaco();
   const wcRef = useRef<WebContainer>(null);
+  const { user } = useUser();
   const convertToFileNode = (files: { name: string; path: string; content: string }[]): FileNode[] => {
     const fileMap: { [key: string]: FileNode } = {};
 
@@ -216,6 +218,44 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
       toast.error("Failed to generate code", { id: toastId });
     }
   }
+
+  const generateInitCode = async () => {
+    const {data : { prompt }} = await axios.get(`/api/prompt?userId=${user?.id}`);
+    console.log("Prompt from dashboard:", prompt);
+    if (!prompt) return;
+    const toastId = toast.loading("Thinking...");
+    try {
+      if (chats.length == 1) {
+        const { data : { id } } = await axios.get(`/api/steps?prompt=${prompt}`);
+        toast.loading("Generating code...", { id: toastId });
+        // const { data: { response : { title, files, response }, id : codeId} } = await axios.get(`/api/generate?prompt=${prompt}&steps=${id}`);
+        const { response : { title, files, response }, id : codeId } = await chainCodeGeneration(prompt, toastId);
+        setTitle(title);
+        addChat(response, ChatType.RESPONSE);
+        const fileNodes = convertToFileNode(files);
+        setFileSystem(fileNodes);
+        toast.success("Code Generated", { id: toastId });
+        setId(codeId);
+      } else {
+        toast.loading("Modifying code...", { id: toastId });
+        const { data: { response : { title, files, response } } } = await axios.post(`/api/modify/${id}?prompt=${prompt}`);
+        if (title) setTitle(title);
+        addChat(response, ChatType.RESPONSE);
+        const packageJsonFile: { name: string; path: string; content: string } | undefined = files.find((file: { name: string; path: string; content: string }) => file.name === "package.json");
+        if (packageJsonFile) {
+          setPreviewUrl("");
+          startDevServer();
+        }
+        const newFileSystem = updateFileSystem(fileSystem, files);
+        setFileSystem(newFileSystem);
+        toast.success("Code Modified", { id: toastId });
+      }
+      setTabValue("preview");
+    } catch (error) {
+      toast.error("Failed to generate code", { id: toastId });
+    }
+  }
+
   const addChat = (message: string, type: ChatType) => {
     setChats((prev) => [...prev, { message, type }]);
     setPrompt("");
@@ -266,6 +306,11 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
   useEffect(() => {
     generateCode();
   }, [chats]);
+
+  useEffect(() => {
+    generateInitCode();
+  }
+  , []);
 
   useEffect(() => {
     setCode(() => {

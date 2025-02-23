@@ -14,6 +14,10 @@ export async function GET(request: Request) {
   }
 
   const prompt = promptStore.get(userId) ?? null
+
+  if (prompt) {
+    promptStore.delete(userId)
+  }
   
   return NextResponse.json({
     prompt,
