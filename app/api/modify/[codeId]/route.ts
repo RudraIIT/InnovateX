@@ -24,30 +24,35 @@ const stringifyCodeFiles = (codeFiles: { name: string, path: string, content: st
   }).join('\n\n');
 };
 
-export async function GET(req: NextRequest, { params } : ModifyRouteParams) {
+export async function POST(req: NextRequest, { params } : ModifyRouteParams) {
   const { codeId } = await params;
   const prompt = req.nextUrl.searchParams.get('prompt');
   const system = req.nextUrl.searchParams.get('system');
   try {
+    let body;
+    if (system) body = await req.json();                                                                                    
     if (!prompt || !codeId) return NextResponse.error();
-    const code = await db.code.findFirst({
-      where: {
-        id: codeId,
-      },
-      select: {
-        id: true,
-        title: true,
-        files: {
-          select: {
-            name: true,
-            path: true,
-            content: true,
+    let codeFiles = body?.files || [];
+    if (!system) {
+      const code = await db.code.findFirst({
+        where: {
+          id: codeId,
+        },
+        select: {
+          id: true,
+          title: true,
+          files: {
+            select: {
+              name: true,
+              path: true,
+              content: true,
+            },
           },
         },
-      },
-    });
-    if (!code) return NextResponse.error();
-    const codeFiles = code.files;
+      });
+      if (!code) return NextResponse.error();
+      codeFiles = code.files
+    }
     const codeFilesString = stringifyCodeFiles(codeFiles);
     const codeModificationPrompt = CODE_MODIFICATION_PROMPT(prompt, codeFilesString);
     const { data } = await axios.post("https://api-lr.agent.ai/v1/action/invoke_llm", {
@@ -60,26 +65,30 @@ export async function GET(req: NextRequest, { params } : ModifyRouteParams) {
       }
     });
     const response = parseResponse(data.response);
-    await db.$transaction(
-      response.files.map(({ name, path, content }) => {
-        return db.file.upsert({
-          where: {
-            path_codeId: {
+    response.files = response.files.map(({ name, path, content }) => {
+      if (path[0] == '/') path = path.slice(1);
+      return { name, path, content };
+    })
+    if (!system) {
+      await db.$transaction(
+        response.files.map(({ name, path, content }) => {
+          return db.file.upsert({
+            where: {
+              path_codeId: {
+                path,
+                codeId,
+              }
+            },
+            update: { content },
+            create: {
+              name,
               path,
+              content,
               codeId,
             }
-          },
-          update: { content },
-          create: {
-            name,
-            path,
-            content,
-            codeId,
-          }
-        })}
-      )
-    );
-    if (!system) {
+          })}
+        )
+      );
       await db.code.update({
         where: {
           id: codeId,

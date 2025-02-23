@@ -33,6 +33,10 @@ export async function GET(req: NextRequest) {
     });
     const response = parseResponse(data.response);
     if (!response.title) response.title = title;
+    response.files = response.files.map(({ name, path, content }) => {
+      if (path[0] == '/') path = path.slice(1);
+      return { name, path, content };
+    })
     const { data : codeData, error } = await createCode(response, prompt);
     if (error) return NextResponse.error();
     if (!codeData) return NextResponse.error();

@@ -1,3 +1,5 @@
+import { updateFiles } from "@/actions/file";
+import { db } from "@/lib/db";
 import axios from "axios";
 import { toast } from "sonner";
 
@@ -41,7 +43,9 @@ export const generateCode = async (prompt: string, toastId: string | number) => 
 
   for (const step of steps) {
     toast.loading(`prompt: ${step}`, { id: toastId });
-    const { data: { response: { title: stepTitle, files: stepFiles, response: stepResponse } } } = await axios.get(`/api/modify/${codeId}?prompt=${step} user demand is ${prompt}&system=true`);
+    const { data: { response: { title: stepTitle, files: stepFiles, response: stepResponse } } } = await axios.post(`/api/modify/${codeId}?prompt=${step} user demand is ${prompt}&system=true`, {
+      files: response.files
+    });
     response.title = stepTitle;
     for (const file of stepFiles) {
       const existingFile = response.files.find(f => f.path === file.path);
@@ -53,7 +57,7 @@ export const generateCode = async (prompt: string, toastId: string | number) => 
     }
     response.response = stepResponse;
   }
-
+  await updateFiles('', codeId, response.files);
   toast.success("Code generation complete!", { id: toastId });
   return {response, id: codeId};
 }

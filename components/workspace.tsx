@@ -197,7 +197,7 @@ export const Workspace : React.FC<WorkspaceProps> = ({ initialId }) => {
         setId(codeId);
       } else {
         toast.loading("Modifying code...", { id: toastId });
-        const { data: { response : { title, files, response } } } = await axios.get(`/api/modify/${id}?prompt=${prompt}`);
+        const { data: { response : { title, files, response } } } = await axios.post(`/api/modify/${id}?prompt=${prompt}`);
         if (title) setTitle(title);
         addChat(response, ChatType.RESPONSE);
         const packageJsonFile: { name: string; path: string; content: string } | undefined = files.find((file: { name: string; path: string; content: string }) => file.name === "package.json");
